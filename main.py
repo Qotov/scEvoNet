@@ -1,18 +1,14 @@
-from core.lgbm.utils import *
 from lightgbm import LGBMRegressor, LGBMClassifier, LGBMRanker
 from sklearn.model_selection import train_test_split
-import scanpy as sc
 import pandas as pd
 import networkx as nx
-from tqdm import tqdm
 from utils import *
 
 logging.basicConfig(level=logging.INFO)
 
 
 class Sample:
-    def __init__(self, name, matrix, cell_types):
-        self.name = name
+    def __init__(self, matrix, cell_types):
         self.models = {}
         self.matrix = matrix
         self.cell_types = list(cell_types)
@@ -83,6 +79,8 @@ class EvoManager:
     def __init__(self, *args):
         self.samples = dict(zip(list(range(len(args))), args))
         self.predictions = dict()
+        self.run_predictions()
+        self.network = self.get_merged_network()
 
     @staticmethod
     def prepare_input_df(matrix, top_features, c=0):
@@ -94,7 +92,7 @@ class EvoManager:
             if i in matrix.columns:
                 df[i] = list(matrix[i])
             else:
-                c += 1
+                # c += 1
                 df[i] = [float('NaN')] * matrix.shape[0]
         # logging.info(f'C score is {c}')
         return sigmoid(df)
@@ -117,7 +115,7 @@ class EvoManager:
         """
         df = pd.DataFrame()
         df['clusters'] = sample2.cell_types
-        for cell_type_model in tqdm(sample1.models):
+        for cell_type_model in sample1.models:
             top_features_ = list(
                 sample1.models_top_features[cell_type_model][0])
             res = sample1.models[cell_type_model].predict(
@@ -144,9 +142,9 @@ class EvoManager:
         df = None
         for cell_type_ in dct:
             df_ = pd.DataFrame()
-            df_['Cell_type'] = [cell_type_] * 100
-            df_['Gene'] = list(dct[cell_type_][0])[:100]
-            df_['Importance'] = list(dct[cell_type_][1])[:100]
+            df_['Cell_type'] = [cell_type_] * 75
+            df_['Gene'] = list(dct[cell_type_][0])[:75]
+            df_['Importance'] = list(dct[cell_type_][1])[:75]
             if krt_remove:
                 df_ = df_[~df_.Gene.str.contains("KRT")]
             if df is None:
@@ -172,4 +170,5 @@ class EvoManager:
             yield path
             if counter == k - 1:
                 break
+
 
