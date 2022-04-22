@@ -3,6 +3,6 @@
 
 Install from PyPI <https://pypi.org/project/scevonet>
 
-``pip install lightgbm``
+``pip install scevonet``
 
 You may need to install wheel via ``pip install wheel`` first.
