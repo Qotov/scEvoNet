@@ -2,7 +2,7 @@ from lightgbm import LGBMRegressor, LGBMClassifier, LGBMRanker
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import networkx as nx
-from utils import *
+from .utils import *
 
 logging.basicConfig(level=logging.INFO)
 
