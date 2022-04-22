@@ -19,5 +19,5 @@ setuptools.setup(
          "License :: OSI Approved :: MIT License",
          "Operating System :: OS Independent",
      ],
-    install_requires=['lightgbm>=3.0.0', 'pandas>=0.24', 'networkx>=2.5']
+    install_requires=['lightgbm>=3.0.0', 'pandas>=1.0.0', 'networkx>=2.5']
  )
