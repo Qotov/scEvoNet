@@ -5,4 +5,4 @@ Install from PyPI <https://pypi.org/project/scevonet>
 
 ``pip install lightgbm``
 
-You may need to install `wheel <https://pythonwheels.com>` via ``pip install wheel`` first.
+You may need to install wheel via ``pip install wheel`` first.
