@@ -3,6 +3,9 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import networkx as nx
 from .utils import *
+from scipy.stats import zscore
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 logging.basicConfig(level=logging.INFO)
 
@@ -75,12 +78,39 @@ class Sample:
             logging.info(f'Model for {cell_type_} is generated')
 
 
+def draw_net(G, gene=False, layout='2', font_size=8):
+    b = nx.betweenness_centrality(G)
+    labels = {}
+    for node in G.nodes():
+        if node:
+            if node in gene:
+                labels[node] = node
+        else:
+            if G.degree[node] >= 1 or b[node] >= 0.08:
+                labels[node] = node
+    layouts = {'1': nx.spring_layout(G),
+               '2': nx.kamada_kawai_layout(G),
+               '3': nx.shell_layout(G)}
+
+    d = dict(G.degree)
+    pos = layouts[layout]
+    nx.draw(G,
+            pos=pos,
+            with_labels=False,
+            nodelist=d.keys(),
+            node_size=1500, alpha=0.7, node_color='lightblue', style='dashed', width=0.5)
+    nx.draw_networkx_labels(G, pos, labels, font_size=font_size, font_color='black')
+    plt.margins(x=0.4, y=0.4)
+    plt.show()
+
+
 class EvoManager:
     def __init__(self, *args):
         self.samples = dict(zip(list(range(len(args))), args))
         self.predictions = dict()
         self.run_predictions()
         self.network = self.get_merged_network()
+        self.cell_types_similarity = self.generate_comparison_df()
 
     @staticmethod
     def prepare_input_df(matrix, top_features, c=0):
@@ -171,4 +201,55 @@ class EvoManager:
             if counter == k - 1:
                 break
 
+    def generate_comparison_df(self):
+        return pd.concat([pd.concat([self.predictions['0_0'].apply(zscore),
+                                     self.predictions['0_1'].apply(zscore)]),
+                          pd.concat([self.predictions['1_0'].apply(zscore),
+                                     self.predictions['1_1'].apply(zscore)])], axis=1)
 
+    def cluster_map(self, visible_legend=False, c_map="viridis"):
+        res = sns.clustermap(self.cell_types_similarity.T.corr(), cmap=c_map, yticklabels=True, figsize=(10, 10))
+        res.cax.set_visible(visible_legend)
+        plt.show()
+
+    def get_closest_cell_types(self, cell_type, type_='matrix'):
+        """
+        Returns sorted list of closest celltypes
+        """
+        assert type_ in ['model', 'matrix']
+        if type_ == 'model':
+            return list(self.cell_types_similarity.sort_values(cell_type, ascending=False).index)
+        else:
+            return list(self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index)
+
+    def check_(self, closest_cell_types, short_path):
+        for i in [x for x in short_path if x in list(self.network['Cell_type'].unique())]:
+            if i not in list(set(closest_cell_types) & set(list(self.network['Cell_type'].unique()))):
+                return False
+        return True
+
+    def generate_cell_type_network(self,
+                                   cluster1, cluster2,
+                                   number_of_short_paths=100, net=True, minimal_number_of_nodes=2):
+        l1, l2, ll = [], [], []
+        df_ = pd.DataFrame()
+
+        for i in [
+            x for x in self.network.get_shortest_paths(self.network,
+                                                       cluster1, cluster2, number_of_short_paths)
+        ]:
+            if len(i) == minimal_number_of_nodes and self.check_(
+                    self.get_closest_cell_types(cluster2), i):
+                ll.append(i)
+                for j, k in enumerate(i):
+                    try:
+                        l2.append(i[j + 1])
+                        l1.append(i[j])
+                    except IndexError:
+                        continue
+        df_['in'], df_['out'] = l1, l2
+        graph = nx.from_pandas_edgelist(df_, 'in', 'out')
+        if net:
+            return graph
+        else:
+            return ll

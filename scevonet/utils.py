@@ -11,6 +11,10 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
+def n(df):
+    return (df - df.min()) / (df.max() - df.min())
+
+
 def update_df(df, top_features):
     """
     Updates expression matrix by handling duplicates
@@ -29,3 +33,5 @@ def update_df(df, top_features):
             rem[i] += 1
     df.columns = new
     return df
+
+
