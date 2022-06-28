@@ -237,8 +237,8 @@ class EvoManager:
         df_ = pd.DataFrame()
 
         for i in [
-            x for x in self.network.get_shortest_paths(self.network,
-                                                       cluster1, cluster2, number_of_short_paths)
+            x for x in self.get_shortest_paths(self.network,
+                                               cluster1, cluster2, number_of_short_paths)
         ]:
             if len(i) == minimal_number_of_nodes and self.check_(
                     self.get_closest_cell_types(cluster2), i):
