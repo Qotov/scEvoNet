@@ -157,11 +157,13 @@ class EvoManager:
         """
         Predicts cell states for each input sample
         """
+        comment_ = 1
         for s1 in self.samples:
             for s2 in self.samples:
                 # if organism1!=organism2:
                 run_id = [s1, s2]
-                print(run_id)
+                logging.info(f'Running {str(comment_)} out of 4')
+                comment_ += 1
                 self.predictions['_'.join([str(x) for x in run_id
                                            ])] = self.between_two(
                     self.samples[s1],
