@@ -230,28 +230,34 @@ class EvoManager:
                 return False
         return True
 
-    def generate_cell_type_network(self,
-                                   cluster1, cluster2,
-                                   number_of_short_paths=100, net=True, minimal_number_of_nodes=2):
-        l1, l2, ll = [], [], []
-        df_ = pd.DataFrame()
+    @staticmethod
+    def write_connections(in_, out_, raw_lists_for_debug, short_path_):
+        raw_lists_for_debug.append(short_path_)
+        for j, k in enumerate(short_path_):
+            try:
+                out_.append(short_path_[j + 1])
+                in_.append(short_path_[j])
+            except IndexError:
+                continue
 
-        for i in [
+    def generate_cell_type_network(self, cluster1, cluster2, number_of_short_paths=100, net=True,
+                                   minimal_number_of_nodes=3, get_only_direct=False):
+        in_, out_, raw_lists_for_debug = [], [], []
+        subnet = pd.DataFrame()
+        for short_path_ in [
             x for x in self.get_shortest_paths(self.network,
                                                cluster1, cluster2, number_of_short_paths)
         ]:
-            if len(i) == minimal_number_of_nodes and self.check_(
-                    self.get_closest_cell_types(cluster2), i):
-                ll.append(i)
-                for j, k in enumerate(i):
-                    try:
-                        l2.append(i[j + 1])
-                        l1.append(i[j])
-                    except IndexError:
-                        continue
-        df_['in'], df_['out'] = l1, l2
-        graph = nx.from_pandas_edgelist(df_, 'in', 'out')
+            if get_only_direct:
+                if len(short_path_) == minimal_number_of_nodes and self.check_(
+                        self.get_closest_cell_types(cluster2), short_path_):
+                    self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
+            elif len(short_path_) >= minimal_number_of_nodes and self.check_(
+                    self.get_closest_cell_types(cluster2), short_path_):
+                self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
+        subnet['in'], subnet['out'] = in_, out_
+        graph = nx.from_pandas_edgelist(subnet, 'in', 'out')
         if net:
             return graph
         else:
-            return ll
+            return raw_lists_for_debug
