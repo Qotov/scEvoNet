@@ -224,37 +224,37 @@ class EvoManager:
         else:
             return list(self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index)
 
-    def check_(self, closest_cell_types, short_path):
-        for i in [x for x in short_path if x in list(self.network['Cell_type'].unique())]:
+    def check_(self, closest_cell_types, shortest_path):
+        for i in [x for x in shortest_path if x in list(self.network['Cell_type'].unique())]:
             if i not in list(set(closest_cell_types) & set(list(self.network['Cell_type'].unique()))):
                 return False
         return True
 
     @staticmethod
-    def write_connections(in_, out_, raw_lists_for_debug, short_path_):
-        raw_lists_for_debug.append(short_path_)
-        for j, k in enumerate(short_path_):
+    def write_connections(in_, out_, raw_lists_for_debug, shortest_path_):
+        raw_lists_for_debug.append(shortest_path_)
+        for j, k in enumerate(shortest_path_):
             try:
-                out_.append(short_path_[j + 1])
-                in_.append(short_path_[j])
+                out_.append(shortest_path_[j + 1])
+                in_.append(shortest_path_[j])
             except IndexError:
                 continue
 
-    def generate_cell_type_network(self, cluster1, cluster2, number_of_short_paths=100,
+    def generate_cell_type_network(self, cluster1, cluster2, number_of_shortest_paths=100,
                                    minimal_number_of_nodes=3, get_only_direct=False, closest_clusters=10, net=True):
         in_, out_, raw_lists_for_debug = [], [], []
         subnet = pd.DataFrame()
-        for short_path_ in [
+        for shortest_path_ in [
             x for x in self.get_shortest_paths(self.network,
-                                               cluster1, cluster2, number_of_short_paths)
+                                               cluster1, cluster2, number_of_shortest_paths)
         ]:
             if get_only_direct:
-                if len(short_path_) == minimal_number_of_nodes and self.check_(
-                        self.get_closest_cell_types(cluster2)[:closest_clusters], short_path_):
-                    self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
-            elif len(short_path_) >= minimal_number_of_nodes and self.check_(
-                    self.get_closest_cell_types(cluster2)[:closest_clusters], short_path_):
-                self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
+                if len(shortest_path_) == minimal_number_of_nodes and self.check_(
+                        self.get_closest_cell_types(cluster2)[:closest_clusters], shortest_path_):
+                    self.write_connections(in_, out_, raw_lists_for_debug, shortest_path_)
+            elif len(shortest_path_) >= minimal_number_of_nodes and self.check_(
+                    self.get_closest_cell_types(cluster2)[:closest_clusters], shortest_path_):
+                self.write_connections(in_, out_, raw_lists_for_debug, shortest_path_)
         subnet['in'], subnet['out'] = in_, out_
         graph = nx.from_pandas_edgelist(subnet, 'in', 'out')
         if net:
