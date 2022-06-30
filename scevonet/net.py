@@ -240,8 +240,8 @@ class EvoManager:
             except IndexError:
                 continue
 
-    def generate_cell_type_network(self, cluster1, cluster2, number_of_short_paths=100, net=True,
-                                   minimal_number_of_nodes=3, get_only_direct=False):
+    def generate_cell_type_network(self, cluster1, cluster2, number_of_short_paths=100,
+                                   minimal_number_of_nodes=3, get_only_direct=False, closest_clusters=10, net=True):
         in_, out_, raw_lists_for_debug = [], [], []
         subnet = pd.DataFrame()
         for short_path_ in [
@@ -250,10 +250,10 @@ class EvoManager:
         ]:
             if get_only_direct:
                 if len(short_path_) == minimal_number_of_nodes and self.check_(
-                        self.get_closest_cell_types(cluster2), short_path_):
+                        self.get_closest_cell_types(cluster2)[:closest_clusters], short_path_):
                     self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
             elif len(short_path_) >= minimal_number_of_nodes and self.check_(
-                    self.get_closest_cell_types(cluster2), short_path_):
+                    self.get_closest_cell_types(cluster2)[:closest_clusters], short_path_):
                 self.write_connections(in_, out_, raw_lists_for_debug, short_path_)
         subnet['in'], subnet['out'] = in_, out_
         graph = nx.from_pandas_edgelist(subnet, 'in', 'out')
