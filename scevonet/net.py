@@ -26,45 +26,41 @@ class Sample:
         Modifies list of N cell states into N lists of 1/0 state for each cell
         """
         for cell_type1 in list(set(self.cell_types)):
-            list_ = []
+            states = []
             for cell_type2 in self.cell_types:
                 if cell_type2 == cell_type1:
-                    list_.append(1)
+                    states.append(1)
                 else:
-                    list_.append(0)
-            self.cell_types_df[cell_type1] = list_
+                    states.append(0)
+            self.cell_types_df[cell_type1] = states
 
     def generate_model(self, cluster_col):
         """
-        Generates LGBM model for a given Y
+        Generates Light GBM model for a given Y
         """
-        X_train, X_test, y_train, y_test = train_test_split(self.matrix,
-                                                            cluster_col,
-                                                            test_size=0.25,
-                                                            random_state=42)
+        x_train, x_test, \
+            y_train, y_test = train_test_split(self.matrix, cluster_col, test_size=0.25, random_state=42)
         model = LGBMRegressor(n_estimators=500, first_metric_only=True)
-        model.fit(X_train, y_train,
-                  eval_set=[(X_test, y_test)],
+        model.fit(x_train, y_train,
+                  eval_set=[(x_test, y_test)],
                   eval_metric=['auc'],
                   early_stopping_rounds=10,
                   verbose=0)
-        top_features = pd.DataFrame(
-            [X_train.columns,
-             model.feature_importances_]).T.sort_values(1, ascending=False)
-        X_train_upd = sigmoid(update_df(X_train, list(top_features[0][:3000])))
-        X_test_upd = sigmoid(update_df(X_test, list(top_features[0][:3000])))
+        top_features = pd.DataFrame([x_train.columns, model.feature_importances_]).T.sort_values(
+            1, ascending=False)
+        x_train_upd = sigmoid(update_df(x_train, list(top_features[0][:3000])))
+        x_test_upd = sigmoid(update_df(x_test, list(top_features[0][:3000])))
         model_upd = LGBMRegressor(n_estimators=500, first_metric_only=True)
-        model_upd.fit(X_train_upd, y_train,
-                      eval_set=[(X_test_upd, y_test)],
+        model_upd.fit(x_train_upd, y_train,
+                      eval_set=[(x_test_upd, y_test)],
                       eval_metric=['auc'],
                       early_stopping_rounds=10,
                       verbose=0)
-        top_features_ = pd.DataFrame(
-            [X_train_upd.columns,
-             model_upd.feature_importances_]).T.sort_values(1, ascending=False)
+        top_features_upd = pd.DataFrame([x_train_upd.columns, model_upd.feature_importances_]).T.sort_values(
+            1, ascending=False)
         return {
             'model': model_upd,
-            'features': top_features_,
+            'features': top_features_upd,
         }
 
     def get_all_models(self):
@@ -76,32 +72,6 @@ class Sample:
             self.models[cell_type_] = model['model']
             self.models_top_features[cell_type_] = model['features']
             logging.info(f'Model for {cell_type_} is generated')
-
-
-def draw_net(G, gene=False, layout='2', font_size=8):
-    b = nx.betweenness_centrality(G)
-    labels = {}
-    for node in G.nodes():
-        if node:
-            if node in gene:
-                labels[node] = node
-        else:
-            if G.degree[node] >= 1 or b[node] >= 0.08:
-                labels[node] = node
-    layouts = {'1': nx.spring_layout(G),
-               '2': nx.kamada_kawai_layout(G),
-               '3': nx.shell_layout(G)}
-
-    d = dict(G.degree)
-    pos = layouts[layout]
-    nx.draw(G,
-            pos=pos,
-            with_labels=False,
-            nodelist=d.keys(),
-            node_size=1500, alpha=0.7, node_color='lightblue', style='dashed', width=0.5)
-    nx.draw_networkx_labels(G, pos, labels, font_size=font_size, font_color='black')
-    plt.margins(x=0.4, y=0.4)
-    plt.show()
 
 
 class EvoManager:
@@ -196,6 +166,9 @@ class EvoManager:
 
     @staticmethod
     def get_shortest_paths(df, in_, out_, k=10):
+        """
+        Generate K number of the shortest paths between selected nodes
+        """
         network = nx.from_pandas_edgelist(df, 'Gene', 'Cell_type', ['Importance'])
         x = nx.shortest_simple_paths(network, in_, out_)
         for counter, path in enumerate(x):
@@ -204,19 +177,25 @@ class EvoManager:
                 break
 
     def generate_comparison_df(self):
+        """
+        :return: confusion matrix for two samples
+        """
         return pd.concat([pd.concat([self.predictions['0_0'].apply(zscore),
                                      self.predictions['0_1'].apply(zscore)]),
                           pd.concat([self.predictions['1_0'].apply(zscore),
                                      self.predictions['1_1'].apply(zscore)])], axis=1)
 
     def cluster_map(self, visible_legend=False, c_map="viridis"):
+        """
+        Draw a clustermap for df.T (clustering by "how cell types were predicted with all the models")
+        """
         res = sns.clustermap(self.cell_types_similarity.T.corr(), cmap=c_map, yticklabels=True, figsize=(10, 10))
         res.cax.set_visible(visible_legend)
         plt.show()
 
     def get_closest_cell_types(self, cell_type, type_='matrix'):
         """
-        Returns sorted list of closest celltypes
+        Returns sorted list of closest cell types
         """
         assert type_ in ['model', 'matrix']
         if type_ == 'model':
@@ -232,6 +211,9 @@ class EvoManager:
 
     @staticmethod
     def write_connections(in_, out_, raw_lists_for_debug, shortest_path_):
+        """
+        Transforms the shortest paths into two lists of In and Out for future network df
+        """
         raw_lists_for_debug.append(shortest_path_)
         for j, k in enumerate(shortest_path_):
             try:
@@ -242,6 +224,16 @@ class EvoManager:
 
     def generate_cell_type_network(self, cluster1, cluster2, number_of_shortest_paths=100,
                                    minimal_number_of_nodes=3, get_only_direct=False, closest_clusters=10, net=True):
+        """
+        Generate a subnetwork of the nodes and edges between two selected nodes
+        :param cluster1: in cluster
+        :param cluster2: out cluster
+        :param number_of_shortest_paths: how many shortest paths you do consider
+        :param minimal_number_of_nodes: minimal number of the nodes in the subnetwork
+        :param get_only_direct: generates subnetwork with len(shortestpaths)==3
+        :param closest_clusters: how many close cell types you do want to incorporate into the subnetwork
+        :param net: for debugging
+        """
         in_, out_, raw_lists_for_debug = [], [], []
         subnet = pd.DataFrame()
         for shortest_path_ in [
@@ -261,3 +253,32 @@ class EvoManager:
             return graph
         else:
             return raw_lists_for_debug
+
+
+def draw_net(graph, gene=False, layout='2', font_size=8):
+    """
+    Draw a graph using networkx (with gene labeling)
+    """
+    b = nx.betweenness_centrality(graph)
+    labels = {}
+    for node in graph.nodes():
+        if node:
+            if node in gene:
+                labels[node] = node
+        else:
+            if graph.degree[node] >= 1 or b[node] >= 0.08:
+                labels[node] = node
+    layouts = {'1': nx.spring_layout(graph),
+               '2': nx.kamada_kawai_layout(graph),
+               '3': nx.shell_layout(graph)}
+
+    d = dict(graph.degree)
+    pos = layouts[layout]
+    nx.draw(graph,
+            pos=pos,
+            with_labels=False,
+            nodelist=d.keys(),
+            node_size=1500, alpha=0.7, node_color='lightblue', style='dashed', width=0.5)
+    nx.draw_networkx_labels(graph, pos, labels, font_size=font_size, font_color='black')
+    plt.margins(x=0.4, y=0.4)
+    plt.show()
