@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
      name='scevonet',
-     version='0.0.5',
+     version='0.0.6',
      author="Aleksandr Kotov",
      author_email="alexander.o.kotov@gmail.com",
      description="Tool for generation [cell state - gene program] network",

@@ -105,8 +105,7 @@ class EvoManager:
         df_ = pd.DataFrame()
         for i in [x for x in df.columns if 'cluster' not in x]:
             df_[i] = list(df.groupby('clusters', as_index=False)[i].mean()[i])
-        df_.index = list(
-            df.groupby('clusters', as_index=False)[i].mean()['clusters'])
+        df_.index = list(df.groupby('clusters', as_index=False)[i].mean()['clusters'])
         return df_
 
     def between_two(self, sample1, sample2):
@@ -165,11 +164,10 @@ class EvoManager:
         ])
 
     @staticmethod
-    def get_shortest_paths(df, in_, out_, k=10):
+    def get_shortest_paths(network, in_, out_, k=10):
         """
         Generate K number of the shortest paths between selected nodes
         """
-        network = nx.from_pandas_edgelist(df, 'Gene', 'Cell_type', ['Importance'])
         x = nx.shortest_simple_paths(network, in_, out_)
         for counter, path in enumerate(x):
             yield path
@@ -234,10 +232,10 @@ class EvoManager:
         :param closest_clusters: how many close cell types you do want to incorporate into the subnetwork
         :param net: for debugging
         """
-        in_, out_, raw_lists_for_debug = [], [], []
-        subnet = pd.DataFrame()
+        in_, out_, raw_lists_for_debug, subnet = [], [], [], pd.DataFrame()
+        graph = nx.from_pandas_edgelist(self.network, 'Gene', 'Cell_type', ['Importance'])
         for shortest_path_ in [
-            x for x in self.get_shortest_paths(self.network,
+            x for x in self.get_shortest_paths(graph,
                                                cluster1, cluster2, number_of_shortest_paths)
         ]:
             if get_only_direct:
@@ -248,11 +246,13 @@ class EvoManager:
                     self.get_closest_cell_types(cluster2)[:closest_clusters], shortest_path_):
                 self.write_connections(in_, out_, raw_lists_for_debug, shortest_path_)
         subnet['in'], subnet['out'] = in_, out_
-        graph = nx.from_pandas_edgelist(subnet, 'in', 'out')
+        subnet['importance'] = [graph.get_edge_data(row['in'], row['out'])['Importance']
+                                for i, row in subnet.iterrows()]
+        subgraph = nx.from_pandas_edgelist(subnet, 'in', 'out', ['Importance'])
         if net:
-            return graph
+            return subgraph
         else:
-            return raw_lists_for_debug
+            return subnet
 
 
 def draw_net(graph, gene=False, layout='2', font_size=8):
