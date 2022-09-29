@@ -248,7 +248,7 @@ class EvoManager:
         subnet['in'], subnet['out'] = in_, out_
         subnet['importance'] = [graph.get_edge_data(row['in'], row['out'])['Importance']
                                 for i, row in subnet.iterrows()]
-        subgraph = nx.from_pandas_edgelist(subnet, 'in', 'out', ['Importance'])
+        subgraph = nx.from_pandas_edgelist(subnet, 'in', 'out', ['importance'])
         if net:
             return subgraph
         else:
