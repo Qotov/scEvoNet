@@ -252,7 +252,7 @@ class EvoManager:
         if net:
             return subgraph
         else:
-            return subnet
+            return subnet.drop_duplicates()
 
 
 def draw_net(graph, gene=False, layout='2', font_size=8):
