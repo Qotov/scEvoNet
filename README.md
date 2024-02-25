@@ -1,4 +1,4 @@
-![img_1.png](img_1.png)
+![scevontelogo.png](scevontelogo.png)
 
 scEvoNet generates __cell state / gene__ network between species or different time points in the same organism using scRNA-seq matrices as an input.
 ### Installation
