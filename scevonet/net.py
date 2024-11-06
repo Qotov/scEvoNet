@@ -11,6 +11,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Sample:
+    TOP_FEATURES_LIMIT = 3000
+    N_ESTIMATORS = 500
+    TEST_SIZE = 0.25
+
     def __init__(self, matrix, cell_types):
         self.models = {}
         self.matrix = matrix
@@ -39,8 +43,8 @@ class Sample:
         Generates Light GBM model for a given Y
         """
         x_train, x_test, \
-            y_train, y_test = train_test_split(self.matrix, cluster_col, test_size=0.25, random_state=42)
-        model = LGBMRegressor(n_estimators=500, first_metric_only=True)
+            y_train, y_test = train_test_split(self.matrix, cluster_col, test_size=self.TEST_SIZE, random_state=42)
+        model = LGBMRegressor(n_estimators=self.N_ESTIMATORS, first_metric_only=True)
         model.fit(x_train, y_train,
                   eval_set=[(x_test, y_test)],
                   eval_metric=['auc'],
@@ -48,9 +52,9 @@ class Sample:
                   verbose=0)
         top_features = pd.DataFrame([x_train.columns, model.feature_importances_]).T.sort_values(
             1, ascending=False)
-        x_train_upd = sigmoid(update_df(x_train, list(top_features[0][:3000])))
-        x_test_upd = sigmoid(update_df(x_test, list(top_features[0][:3000])))
-        model_upd = LGBMRegressor(n_estimators=500, first_metric_only=True)
+        x_train_upd = sigmoid(update_df(x_train, list(top_features[0][:self.TOP_FEATURES_LIMIT])))
+        x_test_upd = sigmoid(update_df(x_test, list(top_features[0][:self.TOP_FEATURES_LIMIT])))
+        model_upd = LGBMRegressor(n_estimators=self.N_ESTIMATORS, first_metric_only=True)
         model_upd.fit(x_train_upd, y_train,
                       eval_set=[(x_test_upd, y_test)],
                       eval_metric=['auc'],
