@@ -1,5 +1,3 @@
-<h1 align="center">scEvoNet</h1>
-
 <p align="center">
   <!-- Logo: PyPI needs HTTPS absolute URLs; jsDelivr mirrors GitHub once <code>assets/logo.png</code> exists on <code>main</code>. Fallback: raw.githubusercontent.com -->
   <a href="https://github.com/Qotov/scEvoNet">
