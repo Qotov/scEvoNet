@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scevonet"
-version = "2.0.0"
+version = "2.1.0"
 description = "Cell state and gene program networks from scRNA-seq (LightGBM / cross-dataset)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,7 +23,9 @@ dependencies = [
 
 [project.optional-dependencies]
 anndata = ["anndata>=0.8"]
+enrichment = ["gseapy>=1.0.5"]
 dev = ["pytest>=7", "pytest-cov>=4"]
+all = ["anndata>=0.8", "gseapy>=1.0.5"]
 
 [project.urls]
 Homepage = "https://github.com/Qotov/scEvoNet"

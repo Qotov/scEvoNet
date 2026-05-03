@@ -47,6 +47,74 @@ class SampleConfig:
     early_stopping_rounds: int = 10
 
 
+def fit_ovr_model(
+    matrix: pd.DataFrame,
+    y_binary: pd.Series,
+    config: SampleConfig | None = None,
+) -> dict[str, Any]:
+    """
+    Train a single one-vs-rest cell-type model using the same two-stage LightGBM
+    pipeline as :class:`Sample` (full genes → top-K → refined model).
+
+    Parameters
+    ----------
+    matrix
+        Expression matrix (cells × genes); index must match ``y_binary``.
+    y_binary
+        Binary target (1 = positive cell type, 0 = other), index aligned with ``matrix``.
+    """
+    cfg = config or SampleConfig()
+    if not y_binary.index.equals(matrix.index):
+        raise ValueError("y_binary index must match matrix.index")
+    LGBMRegressor = _lgbm_regressor()
+    x_train, x_test, y_train, y_test = train_test_split(
+        matrix,
+        y_binary,
+        test_size=cfg.test_size,
+        random_state=cfg.random_state,
+    )
+    model = LGBMRegressor(
+        n_estimators=cfg.n_estimators,
+        random_state=cfg.random_state,
+        verbose=-1,
+    )
+    model.fit(
+        x_train,
+        y_train,
+        eval_set=[(x_test, y_test)],
+        eval_metric="auc",
+        early_stopping_rounds=cfg.early_stopping_rounds,
+        verbose=False,
+    )
+    top_features = (
+        pd.DataFrame({"gene": x_train.columns, "importance": model.feature_importances_})
+        .sort_values("importance", ascending=False)
+        .reset_index(drop=True)
+    )
+    genes = list(top_features["gene"][: cfg.top_features_limit])
+    x_train_upd = sigmoid(update_df(x_train, genes))
+    x_test_upd = sigmoid(update_df(x_test, genes))
+    model_upd = LGBMRegressor(
+        n_estimators=cfg.n_estimators,
+        random_state=cfg.random_state,
+        verbose=-1,
+    )
+    model_upd.fit(
+        x_train_upd,
+        y_train,
+        eval_set=[(x_test_upd, y_test)],
+        eval_metric="auc",
+        early_stopping_rounds=cfg.early_stopping_rounds,
+        verbose=False,
+    )
+    top_features_upd = (
+        pd.DataFrame({"gene": x_train_upd.columns, "importance": model_upd.feature_importances_})
+        .sort_values("importance", ascending=False)
+        .reset_index(drop=True)
+    )
+    return {"model": model_upd, "features": top_features_upd}
+
+
 class Sample:
     """Fit one LGBM regressor per cell type (1 vs rest), with top-feature refinement."""
 
@@ -73,56 +141,7 @@ class Sample:
             self.cell_types_df[cell_type] = states
 
     def _generate_model(self, cluster_col: pd.Series) -> dict:
-        LGBMRegressor = _lgbm_regressor()
-        cfg = self.config
-        x_train, x_test, y_train, y_test = train_test_split(
-            self.matrix,
-            cluster_col,
-            test_size=cfg.test_size,
-            random_state=cfg.random_state,
-        )
-        model = LGBMRegressor(
-            n_estimators=cfg.n_estimators,
-            random_state=cfg.random_state,
-            verbose=-1,
-        )
-        model.fit(
-            x_train,
-            y_train,
-            eval_set=[(x_test, y_test)],
-            eval_metric="auc",
-            early_stopping_rounds=cfg.early_stopping_rounds,
-            verbose=False,
-        )
-        top_features = (
-            pd.DataFrame({"gene": x_train.columns, "importance": model.feature_importances_})
-            .sort_values("importance", ascending=False)
-            .reset_index(drop=True)
-        )
-        genes = list(top_features["gene"][: cfg.top_features_limit])
-        x_train_upd = sigmoid(update_df(x_train, genes))
-        x_test_upd = sigmoid(update_df(x_test, genes))
-        model_upd = LGBMRegressor(
-            n_estimators=cfg.n_estimators,
-            random_state=cfg.random_state,
-            verbose=-1,
-        )
-        model_upd.fit(
-            x_train_upd,
-            y_train,
-            eval_set=[(x_test_upd, y_test)],
-            eval_metric="auc",
-            early_stopping_rounds=cfg.early_stopping_rounds,
-            verbose=False,
-        )
-        top_features_upd = (
-            pd.DataFrame(
-                {"gene": x_train_upd.columns, "importance": model_upd.feature_importances_}
-            )
-            .sort_values("importance", ascending=False)
-            .reset_index(drop=True)
-        )
-        return {"model": model_upd, "features": top_features_upd}
+        return fit_ovr_model(self.matrix, cluster_col, self.config)
 
     def _get_all_models(self) -> None:
         for cell_type in self.cell_types_df.columns:
