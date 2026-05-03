@@ -1,11 +1,34 @@
+<h1 align="center">scEvoNet</h1>
+
 <p align="center">
-  <img src="assets/logo.svg" alt="scEvoNet" width="520">
+  <!-- Logo: PyPI needs HTTPS absolute URLs; jsDelivr mirrors GitHub once <code>assets/logo.png</code> exists on <code>main</code>. Fallback: raw.githubusercontent.com -->
+  <a href="https://github.com/Qotov/scEvoNet">
+    <img
+      src="https://cdn.jsdelivr.net/gh/Qotov/scEvoNet@main/assets/logo.png"
+      alt="scEvoNet: network and evolution icon with ScEvoNet wordmark"
+      width="520"
+    >
+  </a>
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/v/scevonet.svg" alt="PyPI version"></a>
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/pyversions/scevonet.svg" alt="Python versions"></a>
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT">
+  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/v/scevonet?style=flat&amp;logo=pypi&amp;logoColor=white&amp;label=pypi" alt="PyPI version"></a>
+  &#8239;
+  <a href="https://doi.org/10.1186/s12859-023-05213-3"><img src="https://img.shields.io/badge/DOI-10.1186%2Fs12859--023--05213--3-blue?style=flat&amp;logo=doi&amp;logoColor=white" alt="Paper DOI"></a>
+  &#8239;
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/examples/HowToUse.ipynb"><img src="https://img.shields.io/badge/tutorial-notebook-brightgreen?style=flat" alt="Tutorial notebook"></a>
+  &#8239;
+  <a href="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml"><img src="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml/badge.svg" alt="GitHub Actions: tests"></a>
+  &#8239;
+  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/dm/scevonet?style=flat&amp;logo=pypi&amp;logoColor=white&amp;label=downloads" alt="PyPI downloads per month"></a>
+  &#8239;
+  <a href="https://github.com/Qotov/scEvoNet"><img src="https://tokei.rs/b1/github/Qotov/scEvoNet" alt="Lines of code"></a>
+  <br>
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT"></a>
+  &#8239;
+  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/pyversions/scevonet?style=flat&amp;logo=python&amp;logoColor=white&amp;label=python" alt="Python versions"></a>
+  &#8239;
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-Ruff-261230?style=flat&amp;logo=ruff&amp;logoColor=white" alt="Code style: Ruff"></a>
 </p>
 
 **scEvoNet** predicts **cell-state similarity** and builds **gene–cell-type** networks from single-cell RNA-seq. For each cell type you define, it trains a one-vs-rest **LightGBM** model (with a top-feature refinement step designed for sparse expression and cross-dataset use). Models trained on one sample score cells in another, yielding a **similarity-style matrix** and a **bipartite graph** (genes linked to cell types by importance).
@@ -56,15 +79,17 @@ Development uses **[uv](https://docs.astral.sh/uv/)** so installs stay fast and 
 ```bash
 git clone https://github.com/Qotov/scEvoNet.git
 cd scEvoNet
-uv sync --extra dev
+uv sync
 ```
 
-This creates `.venv/` and installs the package in editable mode plus dev tools. The repo pins a default interpreter in **`.python-version`**; override with e.g. `uv sync --extra dev --python 3.10`.
+This creates `.venv/`, installs the package in editable mode, and **includes the default `dev` group** (pytest, ruff, etc.)—so `uv run ruff` works without extra flags. The default interpreter is **`.python-version`**; override with e.g. `uv sync --python 3.10`.
 
-Optional extras for local work:
+Optional feature extras (AnnData, enrichment):
 
 ```bash
-uv sync --extra dev --extra enrichment --extra anndata
+uv sync --extra enrichment --extra anndata
+# or
+uv sync --all-extras
 ```
 
 #### Lint & format ([Ruff](https://docs.astral.sh/ruff/))

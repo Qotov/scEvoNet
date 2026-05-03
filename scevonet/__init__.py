@@ -33,4 +33,4 @@ __all__ = [
     "leave_batch_out_auc",
     "__version__",
 ]
-__version__ = "2.1.2"
+__version__ = "2.1.3"

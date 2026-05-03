@@ -1,2 +1,3 @@
 include LICENSE README.md pyproject.toml
 recursive-include assets *.svg
+recursive-include assets *.png

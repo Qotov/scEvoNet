@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 128" role="img" aria-labelledby="title desc">
   <title id="title">scEvoNet logo</title>
   <desc id="desc">Network nodes and edges next to the wordmark scEvoNet</desc>
@@ -28,5 +29,5 @@
   </g>
   <!-- Wordmark -->
   <text x="132" y="78" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="46" font-weight="700" fill="#1b4965" letter-spacing="-0.02em">scEvoNet</text>
-  <text x="134" y="104" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#5c6770" letter-spacing="0.04em">single-cell · cell states · gene programs</text>
+  <text x="134" y="104" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#5c6770" letter-spacing="0.04em">single-cell &#183; cell states &#183; gene programs</text>
 </svg>

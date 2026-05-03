@@ -38,6 +38,41 @@ class SampleConfig:
     early_stopping_rounds: int = 10
 
 
+def _fit_lgbm_early_stopping(
+    model: Any,
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    x_val: pd.DataFrame,
+    y_val: pd.Series,
+    cfg: SampleConfig,
+) -> None:
+    """
+    LightGBM ≥4 (sklearn API) uses ``callbacks`` for early stopping; older versions used
+    ``early_stopping_rounds`` on ``fit``.
+    """
+    import lightgbm as lgb
+
+    eval_set = [(x_val, y_val)]
+    stop_cb = lgb.early_stopping(stopping_rounds=cfg.early_stopping_rounds, verbose=False)
+    try:
+        model.fit(
+            x_train,
+            y_train,
+            eval_set=eval_set,
+            eval_metric="auc",
+            callbacks=[stop_cb],
+        )
+    except TypeError:
+        model.fit(
+            x_train,
+            y_train,
+            eval_set=eval_set,
+            eval_metric="auc",
+            early_stopping_rounds=cfg.early_stopping_rounds,
+            verbose=False,
+        )
+
+
 def fit_ovr_model(
     matrix: pd.DataFrame,
     y_binary: pd.Series,
@@ -69,14 +104,7 @@ def fit_ovr_model(
         random_state=cfg.random_state,
         verbose=-1,
     )
-    model.fit(
-        x_train,
-        y_train,
-        eval_set=[(x_test, y_test)],
-        eval_metric="auc",
-        early_stopping_rounds=cfg.early_stopping_rounds,
-        verbose=False,
-    )
+    _fit_lgbm_early_stopping(model, x_train, y_train, x_test, y_test, cfg)
     top_features = (
         pd.DataFrame({"gene": x_train.columns, "importance": model.feature_importances_})
         .sort_values("importance", ascending=False)
@@ -90,14 +118,7 @@ def fit_ovr_model(
         random_state=cfg.random_state,
         verbose=-1,
     )
-    model_upd.fit(
-        x_train_upd,
-        y_train,
-        eval_set=[(x_test_upd, y_test)],
-        eval_metric="auc",
-        early_stopping_rounds=cfg.early_stopping_rounds,
-        verbose=False,
-    )
+    _fit_lgbm_early_stopping(model_upd, x_train_upd, y_train, x_test_upd, y_test, cfg)
     top_features_upd = (
         pd.DataFrame({"gene": x_train_upd.columns, "importance": model_upd.feature_importances_})
         .sort_values("importance", ascending=False)
