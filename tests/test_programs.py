@@ -2,8 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
-
 from scevonet.programs import classify_transition_genes, cluster_mean_expression
 
 

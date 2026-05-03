@@ -28,6 +28,8 @@ On **macOS**, if `import lightgbm` fails with a missing **OpenMP** (`libomp`) er
 
 ## Installation
 
+### Users (PyPI)
+
 ```bash
 pip install scevonet
 ```
@@ -38,7 +40,7 @@ Optional dependency groups:
 |--------|---------|
 | `enrichment` | Gene-set ORA via **gseapy** / Enrichr (`enrich_genes`, …) |
 | `anndata` | `sample_from_adata(...)` for Scanpy-style `AnnData` |
-| `dev` | `pytest`, coverage helpers |
+| `dev` | **pytest**, **pytest-cov**, **Ruff** (tests + lint/format for contributors) |
 | `all` | `anndata` + `enrichment` |
 
 ```bash
@@ -47,16 +49,51 @@ pip install 'scevonet[anndata]'
 pip install 'scevonet[all]'
 ```
 
-Development install:
+### Contributors — **uv** (recommended)
+
+Development uses **[uv](https://docs.astral.sh/uv/)** so installs stay fast and pinned via **`uv.lock`**. Install uv ([instructions](https://docs.astral.sh/uv/getting-started/installation/)), then:
 
 ```bash
 git clone https://github.com/Qotov/scEvoNet.git
 cd scEvoNet
-pip install -e ".[dev]"
-pytest tests/ -q
+uv sync --extra dev
 ```
 
+This creates `.venv/` and installs the package in editable mode plus dev tools. The repo pins a default interpreter in **`.python-version`**; override with e.g. `uv sync --extra dev --python 3.10`.
+
+Optional extras for local work:
+
+```bash
+uv sync --extra dev --extra enrichment --extra anndata
+```
+
+#### Lint & format ([Ruff](https://docs.astral.sh/ruff/))
+
+```bash
+uv run ruff check scevonet tests
+uv run ruff format --check scevonet tests   # verify only
+uv run ruff format scevonet tests           # apply formatting
+```
+
+#### Tests
+
+```bash
+uv run pytest tests/ -q
+```
+
+#### Without uv (pip only)
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -q
+ruff check scevonet tests
+ruff format --check scevonet tests
+```
+
+When you change dependencies in `pyproject.toml`, refresh the lockfile with **`uv lock`** and commit **`uv.lock`**.
+
 ---
+
 
 ## Workflow (conceptual)
 

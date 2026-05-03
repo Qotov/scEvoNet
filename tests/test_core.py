@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
+
 import numpy as np
 import pandas as pd
 import pytest
-
-import importlib
-
-import pytest
-
 from scevonet import EvoManager, Sample, SampleConfig
 from scevonet.net import draw_net
 from scevonet.utils import sigmoid, update_df

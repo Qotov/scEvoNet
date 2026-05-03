@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="scevonet",
-    version="2.1.1",
+    version="2.1.2",
     author="Aleksandr Kotov",
     author_email="alexander.o.kotov@gmail.com",
     description="Cell state and gene program networks from scRNA-seq (LightGBM / cross-dataset)",
@@ -37,7 +37,7 @@ setuptools.setup(
     extras_require={
         "anndata": ["anndata>=0.8"],
         "enrichment": ["gseapy>=1.0.5"],
-        "dev": ["pytest>=7", "pytest-cov>=4"],
+        "dev": ["pytest>=7", "pytest-cov>=4", "ruff>=0.8.0"],
         "all": ["anndata>=0.8", "gseapy>=1.0.5"],
     },
 )
