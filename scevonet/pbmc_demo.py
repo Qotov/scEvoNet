@@ -1,8 +1,6 @@
 """PBMC3k-based demonstration matrices (subset, noise, synthetic labels).
 
-Used by tutorials and tests. Requires **scanpy**::
-
-    pip install scanpy
+Used by tutorials and tests. Requires **scanpy** (e.g. ``uv pip install scanpy`` or ``uv sync`` in this repo).
 
 First call downloads PBMC3k (~6 MB) via Scanpy’s cache.
 """

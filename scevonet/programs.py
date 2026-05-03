@@ -123,7 +123,7 @@ def enrich_genes(
     """
     Run **over-representation analysis** via Enrichr (through ``gseapy``).
 
-    Requires optional dependency: ``pip install 'scevonet[enrichment]'``.
+    Requires optional dependency: ``uv pip install 'scevonet[enrichment]'`` (or ``uv add 'scevonet[enrichment]'`` in a uv project).
 
     Parameters
     ----------
@@ -146,7 +146,7 @@ def enrich_genes(
         import gseapy as gp
     except ImportError as e:
         raise ImportError(
-            "enrich_genes requires gseapy. Install with: pip install 'scevonet[enrichment]'"
+            "enrich_genes requires gseapy. Install with: uv pip install 'scevonet[enrichment]'"
         ) from e
 
     if gene_sets is None:
