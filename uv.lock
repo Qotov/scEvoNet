@@ -2473,7 +2473,7 @@ wheels = [
 
 [[package]]
 name = "scevonet"
-version = "2.1.2"
+version = "2.1.3"
 source = { editable = "." }
 dependencies = [
     { name = "lightgbm" },
@@ -2517,6 +2517,14 @@ enrichment = [
     { name = "gseapy" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "pytest", version = "9.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anndata", marker = "extra == 'all'", specifier = ">=0.8" },
@@ -2536,6 +2544,13 @@ requires-dist = [
     { name = "seaborn", specifier = ">=0.11" },
 ]
 provides-extras = ["anndata", "enrichment", "dev", "all"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=7" },
+    { name = "pytest-cov", specifier = ">=4" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
 
 [[package]]
 name = "scikit-learn"

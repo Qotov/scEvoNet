@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="scEvoNet" width="520">
+  <!-- PNG + absolute URL: renders on PyPI and tools that block local/SVG. Forks: swap owner/repo. -->
+  <img src="https://raw.githubusercontent.com/Qotov/scEvoNet/main/assets/logo.png" alt="scEvoNet" width="520">
 </p>
 
 <p align="center">
@@ -56,15 +57,17 @@ Development uses **[uv](https://docs.astral.sh/uv/)** so installs stay fast and 
 ```bash
 git clone https://github.com/Qotov/scEvoNet.git
 cd scEvoNet
-uv sync --extra dev
+uv sync
 ```
 
-This creates `.venv/` and installs the package in editable mode plus dev tools. The repo pins a default interpreter in **`.python-version`**; override with e.g. `uv sync --extra dev --python 3.10`.
+This creates `.venv/`, installs the package in editable mode, and **includes the default `dev` group** (pytest, ruff, etc.)—so `uv run ruff` works without extra flags. The default interpreter is **`.python-version`**; override with e.g. `uv sync --python 3.10`.
 
-Optional extras for local work:
+Optional feature extras (AnnData, enrichment):
 
 ```bash
-uv sync --extra dev --extra enrichment --extra anndata
+uv sync --extra enrichment --extra anndata
+# or
+uv sync --all-extras
 ```
 
 #### Lint & format ([Ruff](https://docs.astral.sh/ruff/))

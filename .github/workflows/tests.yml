@@ -21,7 +21,8 @@ jobs:
           version: "latest"
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --extra dev --python ${{ matrix.python-version }}
+        # default `dev` dependency-group (pytest, ruff) is enabled in pyproject [tool.uv]
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Ruff check
         run: uv run ruff check scevonet tests
       - name: Ruff format
