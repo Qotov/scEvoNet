@@ -1,288 +1,380 @@
-from lightgbm import LGBMRegressor, LGBMClassifier, LGBMRanker
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import networkx as nx
-from .utils import *
-from scipy.stats import zscore
-import matplotlib.pyplot as plt
-import seaborn as sns
+"""LGBM-based cell-type models, cross-dataset predictions, and gene–cell networks."""
 
-logging.basicConfig(level=logging.INFO)
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import Any
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import networkx as nx
+import pandas as pd
+import seaborn as sns
+from scipy.stats import zscore
+from sklearn.model_selection import train_test_split
+
+from scevonet.utils import sigmoid, update_df
+
+logger = logging.getLogger(__name__)
+
+
+def _show_or_close(fig=None) -> None:
+    """``plt.show()`` in interactive backends; close figure when running headless (e.g. Agg)."""
+    be = matplotlib.get_backend().lower()
+    if be in ("agg", "cairo", "pdf", "ps", "svg", "template"):
+        plt.close(fig if fig is not None else plt.gcf())
+    else:
+        plt.show()
+
+
+def _lgbm_regressor():
+    """Import LightGBM only when training (allows importing the package without libomp)."""
+    from lightgbm import LGBMRegressor
+
+    return LGBMRegressor
+
+
+@dataclass
+class SampleConfig:
+    """Training hyperparameters for one-vs-rest cell-type models."""
+
+    top_features_limit: int = 3000
+    n_estimators: int = 500
+    test_size: float = 0.25
+    random_state: int = 42
+    early_stopping_rounds: int = 10
 
 
 class Sample:
-    TOP_FEATURES_LIMIT = 3000
-    N_ESTIMATORS = 500
-    TEST_SIZE = 0.25
+    """Fit one LGBM regressor per cell type (1 vs rest), with top-feature refinement."""
 
-    def __init__(self, matrix, cell_types):
-        self.models = {}
+    def __init__(
+        self,
+        matrix: pd.DataFrame,
+        cell_types: list | pd.Series,
+        config: SampleConfig | None = None,
+    ):
+        self.config = config or SampleConfig()
+        self.models: dict[str, Any] = {}
         self.matrix = matrix
         self.cell_types = list(cell_types)
         self.cell_types_df = pd.DataFrame()
-        self.models_top_features = {}
+        self.models_top_features: dict[str, pd.DataFrame] = {}
 
-        self.generate_ys()
-        self.get_all_models()
+        self._generate_ys()
+        self._get_all_models()
 
-    def generate_ys(self):
-        """
-        Modifies list of N cell states into N lists of 1/0 state for each cell
-        """
-        for cell_type1 in list(set(self.cell_types)):
-            states = []
-            for cell_type2 in self.cell_types:
-                if cell_type2 == cell_type1:
-                    states.append(1)
-                else:
-                    states.append(0)
-            self.cell_types_df[cell_type1] = states
+    def _generate_ys(self) -> None:
+        """Encode each cell type as a binary 1/0 target across cells."""
+        for cell_type in sorted(set(self.cell_types)):
+            states = [1 if ct == cell_type else 0 for ct in self.cell_types]
+            self.cell_types_df[cell_type] = states
 
-    def generate_model(self, cluster_col):
-        """
-        Generates Light GBM model for a given Y
-        """
-        x_train, x_test, \
-            y_train, y_test = train_test_split(self.matrix, cluster_col, test_size=self.TEST_SIZE, random_state=42)
-        model = LGBMRegressor(n_estimators=self.N_ESTIMATORS, first_metric_only=True)
-        model.fit(x_train, y_train,
-                  eval_set=[(x_test, y_test)],
-                  eval_metric=['auc'],
-                  early_stopping_rounds=10,
-                  verbose=0)
-        top_features = pd.DataFrame([x_train.columns, model.feature_importances_]).T.sort_values(
-            1, ascending=False)
-        x_train_upd = sigmoid(update_df(x_train, list(top_features[0][:self.TOP_FEATURES_LIMIT])))
-        x_test_upd = sigmoid(update_df(x_test, list(top_features[0][:self.TOP_FEATURES_LIMIT])))
-        model_upd = LGBMRegressor(n_estimators=self.N_ESTIMATORS, first_metric_only=True)
-        model_upd.fit(x_train_upd, y_train,
-                      eval_set=[(x_test_upd, y_test)],
-                      eval_metric=['auc'],
-                      early_stopping_rounds=10,
-                      verbose=0)
-        top_features_upd = pd.DataFrame([x_train_upd.columns, model_upd.feature_importances_]).T.sort_values(
-            1, ascending=False)
-        return {
-            'model': model_upd,
-            'features': top_features_upd,
-        }
+    def _generate_model(self, cluster_col: pd.Series) -> dict:
+        LGBMRegressor = _lgbm_regressor()
+        cfg = self.config
+        x_train, x_test, y_train, y_test = train_test_split(
+            self.matrix,
+            cluster_col,
+            test_size=cfg.test_size,
+            random_state=cfg.random_state,
+        )
+        model = LGBMRegressor(
+            n_estimators=cfg.n_estimators,
+            random_state=cfg.random_state,
+            verbose=-1,
+        )
+        model.fit(
+            x_train,
+            y_train,
+            eval_set=[(x_test, y_test)],
+            eval_metric="auc",
+            early_stopping_rounds=cfg.early_stopping_rounds,
+            verbose=False,
+        )
+        top_features = (
+            pd.DataFrame({"gene": x_train.columns, "importance": model.feature_importances_})
+            .sort_values("importance", ascending=False)
+            .reset_index(drop=True)
+        )
+        genes = list(top_features["gene"][: cfg.top_features_limit])
+        x_train_upd = sigmoid(update_df(x_train, genes))
+        x_test_upd = sigmoid(update_df(x_test, genes))
+        model_upd = LGBMRegressor(
+            n_estimators=cfg.n_estimators,
+            random_state=cfg.random_state,
+            verbose=-1,
+        )
+        model_upd.fit(
+            x_train_upd,
+            y_train,
+            eval_set=[(x_test_upd, y_test)],
+            eval_metric="auc",
+            early_stopping_rounds=cfg.early_stopping_rounds,
+            verbose=False,
+        )
+        top_features_upd = (
+            pd.DataFrame(
+                {"gene": x_train_upd.columns, "importance": model_upd.feature_importances_}
+            )
+            .sort_values("importance", ascending=False)
+            .reset_index(drop=True)
+        )
+        return {"model": model_upd, "features": top_features_upd}
 
-    def get_all_models(self):
-        """
-        Writes generated models into Sample attributes
-        """
-        for cell_type_ in self.cell_types_df.columns:
-            model = self.generate_model(self.cell_types_df[cell_type_])
-            self.models[cell_type_] = model['model']
-            self.models_top_features[cell_type_] = model['features']
-            logging.info(f'Model for {cell_type_} is generated')
+    def _get_all_models(self) -> None:
+        for cell_type in self.cell_types_df.columns:
+            result = self._generate_model(self.cell_types_df[cell_type])
+            self.models[cell_type] = result["model"]
+            self.models_top_features[cell_type] = result["features"]
+            logger.info("Model for %s is trained", cell_type)
 
 
 class EvoManager:
-    def __init__(self, *args):
-        self.samples = dict(zip(list(range(len(args))), args))
-        self.predictions = dict()
-        self.run_predictions()
-        self.network = self.get_merged_network()
-        self.cell_types_similarity = self.generate_comparison_df()
+    """Cross-predict between datasets, merge gene–cell edges, and similarity matrices."""
+
+    def __init__(
+        self,
+        *samples: Sample,
+        network_top_genes: int = 75,
+        filter_krt_genes: bool = True,
+    ):
+        self.samples = dict(enumerate(samples))
+        self.network_top_genes = network_top_genes
+        self.filter_krt_genes = filter_krt_genes
+        self.predictions: dict[str, pd.DataFrame] = {}
+        self._run_predictions()
+        self.network = self._get_merged_network()
+        self.cell_types_similarity = self._generate_comparison_df()
 
     @staticmethod
-    def prepare_input_df(matrix, top_features, c=0):
-        """
-        Replaces missing genes with NaN values
-        """
-        df = pd.DataFrame()
-        for i in top_features:
-            if i in matrix.columns:
-                df[i] = list(matrix[i])
+    def prepare_input_df(matrix: pd.DataFrame, top_features: list[str]) -> pd.DataFrame:
+        """Align prediction matrix to training features; missing genes become NaN, then sigmoid."""
+        n_rows = matrix.shape[0]
+        data: dict[str, np.ndarray] = {}
+        for gene in top_features:
+            if gene in matrix.columns:
+                data[gene] = np.asarray(matrix[gene].values, dtype=np.float64)
             else:
-                # c += 1
-                df[i] = [float('NaN')] * matrix.shape[0]
-        # logging.info(f'C score is {c}')
+                data[gene] = np.full(n_rows, np.nan, dtype=np.float64)
+        df = pd.DataFrame(data, index=matrix.index)
         return sigmoid(df)
 
     @staticmethod
-    def get_means(df):
-        """
-        Returns mean score for each cell state
-        """
-        df_ = pd.DataFrame()
-        for i in [x for x in df.columns if 'cluster' not in x]:
-            df_[i] = list(df.groupby('clusters', as_index=False)[i].mean()[i])
-        df_.index = list(df.groupby('clusters', as_index=False)[i].mean()['clusters'])
-        return df_
+    def get_means(df: pd.DataFrame) -> pd.DataFrame:
+        """Mean predicted score per annotated cluster."""
+        model_cols = [c for c in df.columns if c != "clusters"]
+        out = df.groupby("clusters", as_index=True)[model_cols].mean()
+        return out
 
-    def between_two(self, sample1, sample2):
-        """
-        Runs all the models of the sample 1 on the sample2
-        """
-        df = pd.DataFrame()
-        df['clusters'] = sample2.cell_types
+    def between_two(self, sample1: Sample, sample2: Sample) -> pd.DataFrame:
+        """Apply all classifiers from ``sample1`` to cells in ``sample2``."""
+        df = pd.DataFrame({"clusters": sample2.cell_types})
         for cell_type_model in sample1.models:
-            top_features_ = list(
-                sample1.models_top_features[cell_type_model][0])
-            res = sample1.models[cell_type_model].predict(
-                self.prepare_input_df(sample2.matrix, top_features_))
-            df[cell_type_model] = res
+            feats = sample1.models_top_features[cell_type_model]["gene"].tolist()
+            mat = self.prepare_input_df(sample2.matrix, feats)
+            df[cell_type_model] = sample1.models[cell_type_model].predict(mat)
         return self.get_means(df)
 
-    def run_predictions(self):
-        """
-        Predicts cell states for each input sample
-        """
-        comment_ = 1
+    def _run_predictions(self) -> None:
+        n = len(self.samples)
+        total = n * n
+        done = 0
         for s1 in self.samples:
             for s2 in self.samples:
-                # if organism1!=organism2:
-                run_id = [s1, s2]
-                logging.info(f'Running {str(comment_)} out of 4')
-                comment_ += 1
-                self.predictions['_'.join([str(x) for x in run_id
-                                           ])] = self.between_two(
-                    self.samples[s1],
-                    self.samples[s2])
+                done += 1
+                key = f"{s1}_{s2}"
+                logger.info("Predictions %s / %s (%s)", done, total, key)
+                self.predictions[key] = self.between_two(self.samples[s1], self.samples[s2])
 
     @staticmethod
-    def extract_features(dct, krt_remove=True):
-        df = None
-        for cell_type_ in dct:
-            df_ = pd.DataFrame()
-            df_['Cell_type'] = [cell_type_] * 75
-            df_['Gene'] = list(dct[cell_type_][0])[:75]
-            df_['Importance'] = list(dct[cell_type_][1])[:75]
+    def extract_features(
+        dct: dict[str, pd.DataFrame],
+        top_n: int,
+        *,
+        krt_remove: bool = True,
+    ) -> pd.DataFrame:
+        """Flatten per-cell-type feature tables into long format for the bipartite network."""
+        parts: list[pd.DataFrame] = []
+        for cell_type_, feat_df in dct.items():
+            genes = feat_df["gene"].iloc[:top_n].tolist()
+            imp = feat_df["importance"].iloc[:top_n].tolist()
+            df_ = pd.DataFrame(
+                {
+                    "Cell_type": [cell_type_] * len(genes),
+                    "Gene": genes,
+                    "Importance": imp,
+                }
+            )
             if krt_remove:
-                df_ = df_[~df_.Gene.str.contains("KRT")]
-            if df is None:
-                df = df_
-            else:
-                df = pd.concat([df, df_])
-        return df
+                df_ = df_[~df_["Gene"].astype(str).str.contains("KRT", na=False)]
+            parts.append(df_)
+        return pd.concat(parts, ignore_index=True)
 
-    def get_merged_network(self):
-        """
-        Generates cell_state/gene_program network
-        """
-        return pd.concat([
-            self.extract_features(self.samples[x].models_top_features)
-            for x in self.samples
-        ])
+    def _get_merged_network(self) -> pd.DataFrame:
+        return pd.concat(
+            [
+                self.extract_features(
+                    self.samples[i].models_top_features,
+                    self.network_top_genes,
+                    krt_remove=self.filter_krt_genes,
+                )
+                for i in self.samples
+            ],
+            ignore_index=True,
+        )
 
     @staticmethod
-    def get_shortest_paths(network, in_, out_, k=10):
-        """
-        Generate K number of the shortest paths between selected nodes
-        """
-        x = nx.shortest_simple_paths(network, in_, out_)
-        for counter, path in enumerate(x):
+    def get_shortest_paths(
+        network: nx.Graph, source, target, k: int = 10
+    ):
+        """Yield up to ``k`` shortest simple paths between ``source`` and ``target``."""
+        paths = nx.shortest_simple_paths(network, source, target)
+        for counter, path in enumerate(paths):
             yield path
-            if counter == k - 1:
+            if counter >= k - 1:
                 break
 
-    def generate_comparison_df(self):
+    def _generate_comparison_df(self) -> pd.DataFrame:
         """
-        :return: confusion matrix for two samples
+        Similarity table used for clustermaps: z-scored predictions concatenated
+        as in the paper (train-on-i models evaluated on all j).
         """
-        return pd.concat([pd.concat([self.predictions['0_0'].apply(zscore),
-                                     self.predictions['0_1'].apply(zscore)]),
-                          pd.concat([self.predictions['1_0'].apply(zscore),
-                                     self.predictions['1_1'].apply(zscore)])], axis=1)
+        n = len(self.samples)
+        column_blocks: list[pd.DataFrame] = []
+        for train_idx in range(n):
+            row_parts = [self.predictions[f"{train_idx}_{j}"].apply(zscore) for j in range(n)]
+            column_blocks.append(pd.concat(row_parts, axis=0))
+        return pd.concat(column_blocks, axis=1)
 
-    def cluster_map(self, visible_legend=False, c_map="viridis"):
-        """
-        Draw a clustermap for df.T (clustering by "how cell types were predicted with all the models")
-        """
-        res = sns.clustermap(self.cell_types_similarity.T.corr(), cmap=c_map, yticklabels=True, figsize=(10, 10))
-        res.cax.set_visible(visible_legend)
-        plt.show()
+    def cluster_map(self, visible_legend: bool = False, c_map: str = "viridis") -> None:
+        """Clustermap of correlations between columns (cell-type model scores)."""
+        grid = sns.clustermap(
+            self.cell_types_similarity.T.corr(),
+            cmap=c_map,
+            yticklabels=True,
+            figsize=(10, 10),
+        )
+        grid.cax.set_visible(visible_legend)
+        _show_or_close(grid.figure)
 
-    def get_closest_cell_types(self, cell_type, type_='matrix'):
-        """
-        Returns sorted list of closest cell types
-        """
-        assert type_ in ['model', 'matrix']
-        if type_ == 'model':
+    def get_closest_cell_types(self, cell_type: str, type_: str = "matrix") -> list:
+        """Closest cell types by score column (``model``) or correlation (``matrix``)."""
+        if type_ not in ("model", "matrix"):
+            raise ValueError("type_ must be 'model' or 'matrix'")
+        if type_ == "model":
             return list(self.cell_types_similarity.sort_values(cell_type, ascending=False).index)
-        else:
-            return list(self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index)
+        return list(self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index)
 
-    def check_(self, closest_cell_types, shortest_path):
-        for i in [x for x in shortest_path if x in list(self.network['Cell_type'].unique())]:
-            if i not in list(set(closest_cell_types) & set(list(self.network['Cell_type'].unique()))):
-                return False
-        return True
+    def check_(
+        self,
+        closest_cell_types: list,
+        shortest_path: list,
+    ) -> bool:
+        net_types = set(self.network["Cell_type"].unique())
+        path_cell_types = [x for x in shortest_path if x in net_types]
+        allowed = set(closest_cell_types) & net_types
+        return all(x in allowed for x in path_cell_types)
 
     @staticmethod
-    def write_connections(in_, out_, raw_lists_for_debug, shortest_path_):
-        """
-        Transforms the shortest paths into two lists of In and Out for future network df
-        """
-        raw_lists_for_debug.append(shortest_path_)
-        for j, k in enumerate(shortest_path_):
-            try:
-                out_.append(shortest_path_[j + 1])
-                in_.append(shortest_path_[j])
-            except IndexError:
-                continue
+    def write_connections(
+        in_: list,
+        out: list,
+        raw_lists_for_debug: list,
+        shortest_path_: list,
+    ) -> None:
+        raw_lists_for_debug.append(list(shortest_path_))
+        for j in range(len(shortest_path_) - 1):
+            in_.append(shortest_path_[j])
+            out.append(shortest_path_[j + 1])
 
-    def generate_cell_type_network(self, cluster1, cluster2, number_of_shortest_paths=100,
-                                   minimal_number_of_nodes=3, get_only_direct=False, closest_clusters=10, net=True):
-        """
-        Generate a subnetwork of the nodes and edges between two selected nodes
-        :param cluster1: in cluster
-        :param cluster2: out cluster
-        :param number_of_shortest_paths: how many shortest paths you do consider
-        :param minimal_number_of_nodes: minimal number of the nodes in the subnetwork
-        :param get_only_direct: generates subnetwork with len(shortestpaths)==3
-        :param closest_clusters: how many close cell types you do want to incorporate into the subnetwork
-        :param net: for debugging
-        """
-        in_, out_, raw_lists_for_debug, subnet = [], [], [], pd.DataFrame()
-        graph = nx.from_pandas_edgelist(self.network, 'Gene', 'Cell_type', ['Importance'])
-        for shortest_path_ in [
-            x for x in self.get_shortest_paths(graph,
-                                               cluster1, cluster2, number_of_shortest_paths)
-        ]:
+    def generate_cell_type_network(
+        self,
+        cluster1,
+        cluster2,
+        number_of_shortest_paths: int = 100,
+        minimal_number_of_nodes: int = 3,
+        get_only_direct: bool = False,
+        closest_clusters: int = 10,
+        net: bool = True,
+    ):
+        """Subnetwork between two cell-type nodes via shortest paths and confusion-matrix filtering."""
+        in_, out_, raw_lists_for_debug = [], [], []
+        subnet = pd.DataFrame()
+        graph = nx.from_pandas_edgelist(
+            self.network, source="Gene", target="Cell_type", edge_attr=["Importance"]
+        )
+        for shortest_path_ in self.get_shortest_paths(
+            graph, cluster1, cluster2, number_of_shortest_paths
+        ):
             if get_only_direct:
-                if len(shortest_path_) == minimal_number_of_nodes and self.check_(
-                        self.get_closest_cell_types(cluster2)[:closest_clusters], shortest_path_):
-                    self.write_connections(in_, out_, raw_lists_for_debug, shortest_path_)
-            elif len(shortest_path_) >= minimal_number_of_nodes and self.check_(
-                    self.get_closest_cell_types(cluster2)[:closest_clusters], shortest_path_):
+                ok = len(shortest_path_) == minimal_number_of_nodes and self.check_(
+                    self.get_closest_cell_types(cluster2)[:closest_clusters],
+                    shortest_path_,
+                )
+            else:
+                ok = len(shortest_path_) >= minimal_number_of_nodes and self.check_(
+                    self.get_closest_cell_types(cluster2)[:closest_clusters],
+                    shortest_path_,
+                )
+            if ok:
                 self.write_connections(in_, out_, raw_lists_for_debug, shortest_path_)
-        subnet['in'], subnet['out'] = in_, out_
-        subnet['importance'] = [graph.get_edge_data(row['in'], row['out'])['Importance']
-                                for i, row in subnet.iterrows()]
-        subgraph = nx.from_pandas_edgelist(subnet, 'in', 'out', ['importance'])
-        if net:
-            return subgraph
-        else:
-            return subnet.drop_duplicates()
+        subnet["in"] = in_
+        subnet["out"] = out_
+        if subnet.empty:
+            empty_g = nx.Graph()
+            return empty_g if net else subnet
+        subnet["importance"] = [
+            graph.get_edge_data(row["in"], row["out"])["Importance"]
+            for _, row in subnet.iterrows()
+        ]
+        subgraph = nx.from_pandas_edgelist(subnet, "in", "out", edge_attr=["importance"])
+        return subgraph if net else subnet.drop_duplicates()
 
 
-def draw_net(graph, gene=False, layout='2', font_size=8):
+def draw_net(
+    graph,
+    gene=None,
+    layout: str = "2",
+    font_size: int = 8,
+) -> None:
     """
-    Draw a graph using networkx (with gene labeling)
+    Draw ``graph`` with NetworkX. If ``gene`` is an iterable of nodes, those are labeled;
+    otherwise label nodes with degree ≥ 1 or betweenness ≥ 0.08.
+
+    ``gene`` may be ``False`` for backward compatibility (treated as auto-label mode).
     """
     b = nx.betweenness_centrality(graph)
-    labels = {}
+    labels: dict = {}
+    use_highlight = gene not in (None, False)
+    highlight = set(gene) if use_highlight else None
     for node in graph.nodes():
-        if node:
-            if node in gene:
+        if highlight is not None:
+            if node in highlight:
                 labels[node] = node
         else:
-            if graph.degree[node] >= 1 or b[node] >= 0.08:
+            if graph.degree[node] >= 1 or b.get(node, 0) >= 0.08:
                 labels[node] = node
-    layouts = {'1': nx.spring_layout(graph),
-               '2': nx.kamada_kawai_layout(graph),
-               '3': nx.shell_layout(graph)}
-
-    d = dict(graph.degree)
-    pos = layouts[layout]
-    nx.draw(graph,
-            pos=pos,
-            with_labels=False,
-            nodelist=d.keys(),
-            node_size=1500, alpha=0.7, node_color='lightblue', style='dashed', width=0.5)
-    nx.draw_networkx_labels(graph, pos, labels, font_size=font_size, font_color='black')
+    layouts = {
+        "1": nx.spring_layout(graph),
+        "2": nx.kamada_kawai_layout(graph),
+        "3": nx.shell_layout(graph),
+    }
+    pos = layouts.get(layout, layouts["2"])
+    degrees = dict(graph.degree)
+    nx.draw(
+        graph,
+        pos=pos,
+        with_labels=False,
+        nodelist=list(degrees.keys()),
+        node_size=1500,
+        alpha=0.7,
+        node_color="lightblue",
+        style="dashed",
+        width=0.5,
+    )
+    nx.draw_networkx_labels(graph, pos, labels, font_size=font_size, font_color="black")
     plt.margins(x=0.4, y=0.4)
-    plt.show()
+    _show_or_close(plt.gcf())
