@@ -159,3 +159,4 @@ cython_debug/
 
 # Local Scanpy dataset mirrors (cache lives under ~/.cache/scanpy by default)
 data/*.h5ad
+examples/data/*.h5ad
