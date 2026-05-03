@@ -63,7 +63,7 @@ Optional dependency groups:
 |--------|---------|
 | `enrichment` | Gene-set ORA via **gseapy** / Enrichr (`enrich_genes`, …) |
 | `anndata` | `sample_from_adata(...)` for Scanpy-style `AnnData` |
-| `dev` | **pytest**, **pytest-cov**, **Ruff** (tests + lint/format for contributors) |
+| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy** (downloads PBMC3k once for tests) |
 | `all` | `anndata` + `enrichment` |
 
 ```bash
@@ -101,6 +101,8 @@ uv run ruff format scevonet tests           # apply formatting
 ```
 
 #### Tests
+
+Integration tests build small matrices from **Scanpy’s PBMC3k** (cached after the first run). Requires **`pip install -e ".[dev]"`** / **`uv sync --extra dev`** so **scanpy** is available.
 
 ```bash
 uv run pytest tests/ -q
