@@ -4,9 +4,15 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/v/scevonet.svg" alt="PyPI version"></a>
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/pyversions/scevonet.svg" alt="Python versions"></a>
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT">
+  <a href="https://pypi.org/project/scevonet/" title="Package on PyPI">
+    <img src="https://img.shields.io/pypi/v/scevonet?style=flat-square&amp;logo=pypi&amp;logoColor=white&amp;label=PyPI" alt="PyPI - scevonet version">
+  </a>
+  <a href="https://pypi.org/project/scevonet/" title="Supported Python versions (from PyPI metadata)">
+    <img src="https://img.shields.io/pypi/pyversions/scevonet?style=flat-square&amp;logo=python&amp;logoColor=white&amp;label=Python" alt="Python versions">
+  </a>
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE" title="MIT License">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT">
+  </a>
 </p>
 
 **scEvoNet** predicts **cell-state similarity** and builds **gene–cell-type** networks from single-cell RNA-seq. For each cell type you define, it trains a one-vs-rest **LightGBM** model (with a top-feature refinement step designed for sparse expression and cross-dataset use). Models trained on one sample score cells in another, yielding a **similarity-style matrix** and a **bipartite graph** (genes linked to cell types by importance).
