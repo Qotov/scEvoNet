@@ -14,13 +14,9 @@
   &#8239;
   <a href="https://doi.org/10.1186/s12859-023-05213-3"><img src="https://img.shields.io/badge/DOI-10.1186%2Fs12859--023--05213--3-blue?style=flat&amp;logo=doi&amp;logoColor=white" alt="Paper DOI"></a>
   &#8239;
-  <a href="https://github.com/Qotov/scEvoNet/blob/main/examples/HowToUse.ipynb"><img src="https://img.shields.io/badge/tutorial-notebook-brightgreen?style=flat" alt="Tutorial notebook"></a>
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/examples/02_PBMC3k_full_workflow.ipynb"><img src="https://img.shields.io/badge/tutorial-notebook-brightgreen?style=flat" alt="Tutorial notebook"></a>
   &#8239;
   <a href="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml"><img src="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml/badge.svg" alt="GitHub Actions: tests"></a>
-  &#8239;
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/dm/scevonet?style=flat&amp;logo=pypi&amp;logoColor=white&amp;label=downloads" alt="PyPI downloads per month"></a>
-  &#8239;
-  <a href="https://github.com/Qotov/scEvoNet"><img src="https://tokei.rs/b1/github/Qotov/scEvoNet" alt="Lines of code"></a>
   <br>
   <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT"></a>
   &#8239;
@@ -43,36 +39,38 @@ Method paper: [Kotov et al., *BMC Bioinformatics* 2023](https://doi.org/10.1186/
 - **Input**: cells × genes `pandas.DataFrame` (or build from AnnData via optional helper), plus per-cell type / cluster labels.  
 - **Gene IDs** must be consistent across samples if you compare species—orthology mapping is not built into the core pipeline.
 
-On **macOS**, if `import lightgbm` fails with a missing **OpenMP** (`libomp`) error, install a build that ships OpenMP (for example `conda install -c conda-forge libomp`) or use **conda-forge**’s `lightgbm` package.
+On **macOS**, if `import lightgbm` fails with a missing **OpenMP** (`libomp`) error, install OpenMP for your stack (for example **`brew install libomp`**, or **`conda install -c conda-forge libomp`** if you use conda), then retry.
 
 ---
 
 ## Installation
 
-### Users (PyPI)
+Install **[uv](https://docs.astral.sh/uv/)** ([installation](https://docs.astral.sh/uv/getting-started/installation/)). All commands below use **`uv`** (including **`uv pip install`**, which is uv’s installer—not the legacy `pip` tool).
+
+### Install from PyPI
 
 ```bash
-pip install scevonet
+uv pip install scevonet
 ```
 
-Optional dependency groups:
+Optional extras:
 
 | Extra | Purpose |
 |--------|---------|
 | `enrichment` | Gene-set ORA via **gseapy** / Enrichr (`enrich_genes`, …) |
 | `anndata` | `sample_from_adata(...)` for Scanpy-style `AnnData` |
-| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy** (downloads PBMC3k once for tests) |
+| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy**, **ipykernel** (tests, notebooks; PBMC3k cached after first run) |
 | `all` | `anndata` + `enrichment` |
 
 ```bash
-pip install 'scevonet[enrichment]'
-pip install 'scevonet[anndata]'
-pip install 'scevonet[all]'
+uv pip install 'scevonet[enrichment]'
+uv pip install 'scevonet[anndata]'
+uv pip install 'scevonet[all]'
 ```
 
-### Contributors — **uv** (recommended)
+In a **uv-managed project** you can instead run **`uv add scevonet`** (or **`uv add 'scevonet[anndata]'`**, etc.) from the project root.
 
-Development uses **[uv](https://docs.astral.sh/uv/)** so installs stay fast and pinned via **`uv.lock`**. Install uv ([instructions](https://docs.astral.sh/uv/getting-started/installation/)), then:
+### Clone this repository (contributors)
 
 ```bash
 git clone https://github.com/Qotov/scEvoNet.git
@@ -80,15 +78,25 @@ cd scEvoNet
 uv sync
 ```
 
-This creates `.venv/`, installs the package in editable mode, and **includes the default `dev` group** (pytest, ruff, etc.)—so `uv run ruff` works without extra flags. The default interpreter is **`.python-version`**; override with e.g. `uv sync --python 3.10`.
+This creates **`.venv/`**, installs the package in **editable** mode, and applies the **default `dev`** dependency group from **`uv.lock`** (pytest, ruff, scanpy, ipykernel, …). The interpreter is pinned in **`.python-version`**; override with e.g. **`uv sync --python 3.10`**.
 
-Optional feature extras (AnnData, enrichment):
+Optional feature extras:
 
 ```bash
 uv sync --extra enrichment --extra anndata
 # or
 uv sync --all-extras
 ```
+
+#### Example notebooks (Jupyter / VS Code)
+
+After **`uv sync`** in the repo:
+
+```bash
+uv run python -m ipykernel install --user --name scevonet --display-name "Python (scEvoNet)"
+```
+
+In **VS Code / Cursor**: pick kernel **“Python (scEvoNet)”**, or **Python: Select Interpreter** → **`.venv/bin/python`**. Open notebooks under **`examples/`**.
 
 #### Lint & format ([Ruff](https://docs.astral.sh/ruff/))
 
@@ -100,22 +108,13 @@ uv run ruff format scevonet tests           # apply formatting
 
 #### Tests
 
-Integration tests build small matrices from **Scanpy’s PBMC3k** (cached after the first run). Requires **`pip install -e ".[dev]"`** / **`uv sync --extra dev`** so **scanpy** is available.
+Integration tests load **PBMC3k** via **scanpy** (included in the **dev** group). First run downloads the dataset once into Scanpy’s cache. From a clone use **`uv sync`** (default **dev** group includes **scanpy**).
 
 ```bash
 uv run pytest tests/ -q
 ```
 
-#### Without uv (pip only)
-
-```bash
-pip install -e ".[dev]"
-pytest tests/ -q
-ruff check scevonet tests
-ruff format --check scevonet tests
-```
-
-When you change dependencies in `pyproject.toml`, refresh the lockfile with **`uv lock`** and commit **`uv.lock`**.
+When you change dependencies in **`pyproject.toml`**, run **`uv lock`** and commit **`uv.lock`**.
 
 ---
 
@@ -161,7 +160,15 @@ edges = em.network
 # subgraph = em.generate_cell_type_network("type_a", "type_b")
 ```
 
-**Tutorial notebook:** [examples/HowToUse.ipynb](examples/HowToUse.ipynb)
+### Example notebooks
+
+| Notebook | Description |
+|----------|-------------|
+| [**01_quickstart_synthetic**](examples/01_quickstart_synthetic.ipynb) | Minimal **self-contained** pipeline (random matrix, no downloads). |
+| [**02_PBMC3k_full_workflow**](examples/02_PBMC3k_full_workflow.ipynb) | **End-to-end API** with PBMC3k-derived demo data (`scanpy` + `scevonet.pbmc_demo`), validation, plotting, optional enrichment. |
+| [**03_xenopus_embryo_legacy**](examples/03_xenopus_embryo_legacy.ipynb) | Original Xenopus embryo pickle workflow *(needs external `.pkl` files — see notebook)*. |
+
+From a clone, run **`uv sync`** (default **dev** group includes **scanpy**, **ipykernel**, and test tools). From PyPI only, use **`uv pip install 'scevonet[dev]'`** if you need the same extras without the repo.
 
 ---
 

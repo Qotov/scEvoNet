@@ -1,6 +1,10 @@
-"""Shared fixtures: PBMC3k-derived session-scoped bundle (requires scanpy)."""
+"""Pytest configuration: headless matplotlib + PBMC session fixtures (requires scanpy)."""
 
 from __future__ import annotations
+
+import matplotlib
+
+matplotlib.use("Agg")
 
 from typing import Any
 
@@ -10,7 +14,7 @@ from scevonet.tl import SampleConfig
 
 @pytest.fixture
 def pbmc_sample_config() -> SampleConfig:
-    """Light training settings for real-data-shaped PBMC tests (faster than defaults)."""
+    """Light training settings for PBMC-shaped integration tests (faster than defaults)."""
     return SampleConfig(
         top_features_limit=200,
         n_estimators=55,
@@ -22,9 +26,9 @@ def pbmc_sample_config() -> SampleConfig:
 @pytest.fixture(scope="session")
 def pbmc_bundle() -> dict[str, Any]:
     pytest.importorskip("scanpy")
-    from tests.pbmc_test_data import build_pbmc_test_bundle
+    from scevonet.pbmc_demo import build_pbmc_demo_bundle
 
-    return build_pbmc_test_bundle(seed=42)
+    return build_pbmc_demo_bundle(seed=42)
 
 
 @pytest.fixture
@@ -49,3 +53,12 @@ def pbmc_third_sample(pbmc_bundle: dict[str, Any]):
 def pbmc_batches(pbmc_bundle: dict[str, Any]) -> list[str]:
     """Batch labels aligned with ``pbmc_df_labels`` rows."""
     return pbmc_bundle["batches"]
+
+
+@pytest.fixture
+def pbmc_transition_pair(pbmc_bundle: dict[str, Any]):
+    return (
+        pbmc_bundle["cluster_a"],
+        pbmc_bundle["cluster_b"],
+        pbmc_bundle["genes_for_transition"],
+    )

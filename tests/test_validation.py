@@ -1,4 +1,4 @@
-"""Validation helpers (LightGBM) using PBMC3k-derived matrices."""
+"""Validation helpers (LightGBM) using PBMC-derived matrices."""
 
 from __future__ import annotations
 
