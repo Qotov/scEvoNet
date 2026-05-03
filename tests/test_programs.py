@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scevonet.programs import classify_transition_genes, cluster_mean_expression
+from scevonet.tl import classify_transition_genes, cluster_mean_expression
 
 
 def test_cluster_mean_expression_synthetic():
