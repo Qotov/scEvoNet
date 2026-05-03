@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 
 import pytest
-from scevonet.validation import leave_batch_out_auc, permutation_importance_null
+from scevonet.tl import leave_batch_out_auc, permutation_importance_null
 
 
 def _lgbm_loads() -> bool:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from scevonet.programs import classify_transition_genes, cluster_mean_expression
+from scevonet.tl import classify_transition_genes, cluster_mean_expression
 
 
 @pytest.fixture

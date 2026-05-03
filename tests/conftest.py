@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from scevonet.net import SampleConfig
+from scevonet.tl import SampleConfig
 
 
 @pytest.fixture

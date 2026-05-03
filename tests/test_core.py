@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from scevonet import EvoManager, Sample
-from scevonet.net import draw_net
+from scevonet.pl import draw_net
 from scevonet.utils import sigmoid, update_df
 
 
