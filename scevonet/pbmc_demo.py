@@ -1,6 +1,8 @@
-"""PBMC3k-derived expression matrices for tests: subsetting, noise, synthetic labels.
+"""PBMC3k-based demonstration matrices (subset, noise, synthetic labels).
 
-Requires ``scanpy`` (declared in the ``dev`` optional dependency group).
+Used by tutorials and tests. Requires **scanpy** (e.g. ``uv pip install scanpy`` or ``uv sync`` in this repo).
+
+First call downloads PBMC3k (~6 MB) via Scanpy’s cache.
 """
 
 from __future__ import annotations
@@ -12,7 +14,7 @@ import pandas as pd
 
 
 def _stratified_batches(labels: list[str], rng: np.random.Generator) -> list[str]:
-    """Spread each cell type across batch_0 … batch_2 so LOBO validation can train."""
+    """Spread each cell type across ``batch_0`` … ``batch_2`` for leave-batch-out checks."""
     n = len(labels)
     out = ["batch_0"] * n
     df_idx = pd.DataFrame({"ix": np.arange(n), "lab": labels})
@@ -24,13 +26,13 @@ def _stratified_batches(labels: list[str], rng: np.random.Generator) -> list[str
     return out
 
 
-def build_pbmc_test_bundle(seed: int = 42) -> dict[str, Any]:
+def build_pbmc_demo_bundle(seed: int = 42) -> dict[str, Any]:
     """
-    Load Scanpy PBMC3k, subsample cells/genes, add noise, and derive labels.
+    Load Scanpy PBMC3k, subsample cells/genes, add noise, derive labels.
 
-    Returns three sample matrices (same genes, resampling + extra noise) to mimic
-    multiple datasets, batch ids for leave-batch-out tests, and two cluster names
-    for directionality tests.
+    Returns three expression matrices (bootstrap resamples + noise) sharing the same
+    genes (simulating multiple samples), stratified batch IDs, and metadata for
+    directionality / enrichment examples.
     """
     import scanpy as sc
     from sklearn.cluster import KMeans
@@ -75,12 +77,11 @@ def build_pbmc_test_bundle(seed: int = 42) -> dict[str, Any]:
     labels_arr[rare_ix] = "Rare"
     labels = labels_arr.tolist()
 
-    # Ensure enough cells per class for one-vs-rest models
     vc = pd.Series(labels).value_counts()
     if vc.min() < 10:
         merge_from = vc.idxmin()
         donor = vc.idxmax()
-        need = 10 - vc[merge_from]
+        need = int(10 - vc[merge_from])
         donor_mask = np.array(labels) == donor
         donor_ix = np.flatnonzero(donor_mask)
         relab = rng.choice(donor_ix, size=min(need, len(donor_ix)), replace=False)

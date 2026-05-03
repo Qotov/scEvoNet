@@ -148,6 +148,7 @@ class Sample:
 
     def _generate_ys(self) -> None:
         """Encode each cell type as a binary 1/0 target across cells."""
+        self.cell_types_df = pd.DataFrame(index=self.matrix.index)
         for cell_type in sorted(set(self.cell_types)):
             states = [1 if ct == cell_type else 0 for ct in self.cell_types]
             self.cell_types_df[cell_type] = states

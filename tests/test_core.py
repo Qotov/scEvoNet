@@ -1,4 +1,4 @@
-"""Tests for Sample / EvoManager and utilities using PBMC3k-derived fixtures."""
+"""Tests for Sample / EvoManager and utilities (PBMC-derived fixtures where noted)."""
 
 from __future__ import annotations
 
@@ -46,8 +46,7 @@ def test_sample_and_evomanager(pbmc_df_labels, pbmc_second_sample, pbmc_sample_c
     cfg = pbmc_sample_config
     s0 = Sample(df, labels, config=cfg)
     s1 = Sample(df2, labels2, config=cfg)
-    n_types = len({*labels})
-    assert len(s0.models) == n_types
+    assert len(s0.models) == len(set(labels))
     em = EvoManager(s0, s1, network_top_genes=30)
     assert em.predictions.keys() == {"0_0", "0_1", "1_0", "1_1"}
     assert em.cell_types_similarity.shape[0] > 0

@@ -81,8 +81,9 @@ def draw_network(
     Parameters
     ----------
     gene
-        Same as :func:`scevonet.net.draw_net`: iterable of nodes to label, or ``None`` / ``False``
-        for automatic labeling of salient nodes (degree or betweenness).
+        Nodes to always label: a single gene/cell name (``str``), an iterable of node names,
+        or ``None`` / ``False`` / ``True`` for automatic labeling of salient nodes (degree or
+        betweenness). ``True`` is treated like ``None`` (useful as a legacy boolean flag).
     layout
         ``kamada_kawai`` (default), ``spring``, ``shell``, or ``planar``.
     edge_weight_attr
@@ -90,8 +91,15 @@ def draw_network(
     """
     b = nx.betweenness_centrality(graph)
     labels: dict = {}
-    use_highlight = gene not in (None, False)
-    highlight = set(gene) if use_highlight else None
+    # gene: None / False / True → automatic salient labels; str → one highlighted node;
+    # iterable of str → those nodes (not ``set(str)``, which would split characters).
+    highlight: set | None
+    if gene in (None, False, True):
+        highlight = None
+    elif isinstance(gene, str):
+        highlight = {gene}
+    else:
+        highlight = set(gene)
     for node in graph.nodes():
         if highlight is not None:
             if node in highlight:

@@ -37,7 +37,7 @@ setuptools.setup(
     extras_require={
         "anndata": ["anndata>=0.8"],
         "enrichment": ["gseapy>=1.0.5"],
-        "dev": ["pytest>=7", "pytest-cov>=4", "ruff>=0.8.0", "scanpy>=1.9"],
+        "dev": ["pytest>=7", "pytest-cov>=4", "ruff>=0.8.0", "scanpy>=1.9", "ipykernel>=6.29"],
         "all": ["anndata>=0.8", "gseapy>=1.0.5"],
     },
 )
