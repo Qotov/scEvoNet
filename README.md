@@ -1,6 +1,6 @@
 <p align="center">
-  <!-- Relative to repo root: works on GitHub for every branch/tag. For PyPI, use an absolute URL after logo.png is on the default branch. -->
-  <img src="assets/logo.png" alt="scEvoNet" width="520">
+  <!-- PyPI renders README offline: relative paths break there; GitHub accepts this absolute URL too. Requires logo.png on default branch (main). -->
+  <img src="https://raw.githubusercontent.com/Qotov/scEvoNet/main/assets/logo.png" alt="scEvoNet" width="520">
 </p>
 
 <p align="center">
