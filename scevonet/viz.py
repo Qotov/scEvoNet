@@ -19,6 +19,7 @@ def finish_matplotlib_figure(fig=None) -> None:
     else:
         plt.show()
 
+
 def _edge_weights(graph: nx.Graph, attr: str | None) -> list[float]:
     if not graph.edges():
         return []
@@ -36,7 +37,7 @@ def _normalize_widths(weights: list[float], lo: float = 0.4, hi: float = 3.0) ->
         return []
     arr = np.asarray(weights, dtype=float)
     if arr.max() <= arr.min():
-        return [ (lo + hi) / 2.0 ] * len(weights)
+        return [(lo + hi) / 2.0] * len(weights)
     z = (arr - arr.min()) / (arr.max() - arr.min())
     return list(lo + z * (hi - lo))
 

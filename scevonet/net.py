@@ -6,15 +6,16 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 import networkx as nx
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from scipy.stats import zscore
 from sklearn.model_selection import train_test_split
 
 from scevonet.utils import sigmoid, update_df
-from scevonet.viz import draw_net, finish_matplotlib_figure
+from scevonet.viz import draw_net as draw_net  # draw_net: public re-export
+from scevonet.viz import finish_matplotlib_figure
 
 logger = logging.getLogger(__name__)
 
@@ -236,9 +237,7 @@ class EvoManager:
         )
 
     @staticmethod
-    def get_shortest_paths(
-        network: nx.Graph, source, target, k: int = 10
-    ):
+    def get_shortest_paths(network: nx.Graph, source, target, k: int = 10):
         """Yield up to ``k`` shortest simple paths between ``source`` and ``target``."""
         paths = nx.shortest_simple_paths(network, source, target)
         for counter, path in enumerate(paths):
@@ -275,7 +274,9 @@ class EvoManager:
             raise ValueError("type_ must be 'model' or 'matrix'")
         if type_ == "model":
             return list(self.cell_types_similarity.sort_values(cell_type, ascending=False).index)
-        return list(self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index)
+        return list(
+            self.cell_types_similarity.T.corr().sort_values(cell_type, ascending=False).index
+        )
 
     def check_(
         self,
@@ -336,8 +337,7 @@ class EvoManager:
             empty_g = nx.Graph()
             return empty_g if net else subnet
         subnet["importance"] = [
-            graph.get_edge_data(row["in"], row["out"])["Importance"]
-            for _, row in subnet.iterrows()
+            graph.get_edge_data(row["in"], row["out"])["Importance"] for _, row in subnet.iterrows()
         ]
         subgraph = nx.from_pandas_edgelist(subnet, "in", "out", edge_attr=["importance"])
         return subgraph if net else subnet.drop_duplicates()

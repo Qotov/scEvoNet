@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scevonet"
-version = "2.1.1"
+version = "2.1.2"
 description = "Cell state and gene program networks from scRNA-seq (LightGBM / cross-dataset)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -24,7 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 anndata = ["anndata>=0.8"]
 enrichment = ["gseapy>=1.0.5"]
-dev = ["pytest>=7", "pytest-cov>=4"]
+dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.8.0"]
 all = ["anndata>=0.8", "gseapy>=1.0.5"]
 
 [project.urls]
@@ -36,3 +36,25 @@ include = ["scevonet*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+src = ["scevonet", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line length (formatter / manual wraps)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true

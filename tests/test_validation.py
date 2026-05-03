@@ -5,7 +5,6 @@ import importlib
 import numpy as np
 import pandas as pd
 import pytest
-
 from scevonet.net import SampleConfig
 from scevonet.validation import leave_batch_out_auc, permutation_importance_null
 
