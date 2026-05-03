@@ -1,18 +1,22 @@
+<h1 align="center">scEvoNet</h1>
+
 <p align="center">
-  <!-- PyPI renders README offline: relative paths break there; GitHub accepts this absolute URL too. Requires logo.png on default branch (main). -->
-  <img src="https://raw.githubusercontent.com/Qotov/scEvoNet/main/assets/logo.png" alt="scEvoNet" width="520">
+  <!-- Logo: PyPI needs HTTPS absolute URLs; jsDelivr mirrors GitHub once <code>assets/logo.png</code> exists on <code>main</code>. Fallback: raw.githubusercontent.com -->
+  <a href="https://github.com/Qotov/scEvoNet">
+    <img
+      src="https://cdn.jsdelivr.net/gh/Qotov/scEvoNet@main/assets/logo.png"
+      alt="scEvoNet logo"
+      width="520"
+    >
+  </a>
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/scevonet/" title="Package on PyPI">
-    <img src="https://img.shields.io/pypi/v/scevonet?style=flat-square&amp;logo=pypi&amp;logoColor=white&amp;label=PyPI" alt="PyPI - scevonet version">
-  </a>
-  <a href="https://pypi.org/project/scevonet/" title="Supported Python versions (from PyPI metadata)">
-    <img src="https://img.shields.io/pypi/pyversions/scevonet?style=flat-square&amp;logo=python&amp;logoColor=white&amp;label=Python" alt="Python versions">
-  </a>
-  <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE" title="MIT License">
-    <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT">
-  </a>
+  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/v/scevonet?style=flat&amp;logo=pypi&amp;logoColor=white&amp;label=PyPI" alt="PyPI version"></a>
+  &#8239;
+  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/pyversions/scevonet?style=flat&amp;logo=python&amp;logoColor=white&amp;label=Python" alt="Python versions"></a>
+  &#8239;
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat" alt="License MIT"></a>
 </p>
 
 **scEvoNet** predicts **cell-state similarity** and builds **gene–cell-type** networks from single-cell RNA-seq. For each cell type you define, it trains a one-vs-rest **LightGBM** model (with a top-feature refinement step designed for sparse expression and cross-dataset use). Models trained on one sample score cells in another, yielding a **similarity-style matrix** and a **bipartite graph** (genes linked to cell types by importance).
