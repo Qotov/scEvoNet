@@ -1,11 +1,10 @@
-"""Validation helpers require LightGBM."""
+"""Validation helpers (LightGBM) using PBMC-derived matrices."""
+
+from __future__ import annotations
 
 import importlib
 
-import numpy as np
-import pandas as pd
 import pytest
-from scevonet.net import SampleConfig
 from scevonet.validation import leave_batch_out_auc, permutation_importance_null
 
 
@@ -24,19 +23,14 @@ needs_lightgbm = pytest.mark.skipif(
 
 
 @needs_lightgbm
-def test_permutation_importance_null_runs():
-    rng = np.random.default_rng(42)
-    g = 25
-    genes = [f"G{i}" for i in range(g)]
-    X = rng.random((60, g))
-    mat = pd.DataFrame(X, columns=genes)
-    labels = ["T"] * 20 + ["U"] * 20 + ["V"] * 20
-    cfg = SampleConfig(top_features_limit=15, n_estimators=30, early_stopping_rounds=5)
+def test_permutation_importance_null_runs(pbmc_df_labels, pbmc_sample_config):
+    mat, labels = pbmc_df_labels
+    pos_type = sorted(set(labels))[0]
     out = permutation_importance_null(
         mat,
         labels,
-        "T",
-        config=cfg,
+        pos_type,
+        config=pbmc_sample_config,
         n_perm=5,
         random_seed=1,
     )
@@ -45,15 +39,9 @@ def test_permutation_importance_null_runs():
 
 
 @needs_lightgbm
-def test_leave_batch_out_auc():
-    rng = np.random.default_rng(0)
-    g = 20
-    genes = [f"G{i}" for i in range(g)]
-    X = rng.random((48, g))
-    mat = pd.DataFrame(X, columns=genes)
-    labels = ["P"] * 24 + ["Q"] * 24
-    batches = ["b1"] * 16 + ["b2"] * 16 + ["b3"] * 16
-    cfg = SampleConfig(top_features_limit=12, n_estimators=25, early_stopping_rounds=3)
-    df = leave_batch_out_auc(mat, labels, batches, "P", config=cfg)
+def test_leave_batch_out_auc(pbmc_df_labels, pbmc_batches, pbmc_sample_config):
+    mat, labels = pbmc_df_labels
+    pos_type = sorted(set(labels))[0]
+    df = leave_batch_out_auc(mat, labels, pbmc_batches, pos_type, config=pbmc_sample_config)
     assert len(df) == 3
     assert "auc" in df.columns

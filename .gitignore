@@ -156,3 +156,6 @@ cython_debug/
 
 # setuptools / local installs
 *.egg-info/
+
+# Local Scanpy dataset mirrors (cache lives under ~/.cache/scanpy by default)
+data/*.h5ad

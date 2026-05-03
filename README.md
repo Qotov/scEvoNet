@@ -16,13 +16,9 @@
   &#8239;
   <a href="https://doi.org/10.1186/s12859-023-05213-3"><img src="https://img.shields.io/badge/DOI-10.1186%2Fs12859--023--05213--3-blue?style=flat&amp;logo=doi&amp;logoColor=white" alt="Paper DOI"></a>
   &#8239;
-  <a href="https://github.com/Qotov/scEvoNet/blob/main/examples/HowToUse.ipynb"><img src="https://img.shields.io/badge/tutorial-notebook-brightgreen?style=flat" alt="Tutorial notebook"></a>
+  <a href="https://github.com/Qotov/scEvoNet/blob/main/examples/02_PBMC3k_full_workflow.ipynb"><img src="https://img.shields.io/badge/tutorial-notebook-brightgreen?style=flat" alt="Tutorial notebook"></a>
   &#8239;
   <a href="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml"><img src="https://github.com/Qotov/scEvoNet/actions/workflows/tests.yml/badge.svg" alt="GitHub Actions: tests"></a>
-  &#8239;
-  <a href="https://pypi.org/project/scevonet/"><img src="https://img.shields.io/pypi/dm/scevonet?style=flat&amp;logo=pypi&amp;logoColor=white&amp;label=downloads" alt="PyPI downloads per month"></a>
-  &#8239;
-  <a href="https://github.com/Qotov/scEvoNet"><img src="https://tokei.rs/b1/github/Qotov/scEvoNet" alt="Lines of code"></a>
   <br>
   <a href="https://github.com/Qotov/scEvoNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT"></a>
   &#8239;
@@ -63,7 +59,7 @@ Optional dependency groups:
 |--------|---------|
 | `enrichment` | Gene-set ORA via **gseapy** / Enrichr (`enrich_genes`, …) |
 | `anndata` | `sample_from_adata(...)` for Scanpy-style `AnnData` |
-| `dev` | **pytest**, **pytest-cov**, **Ruff** (tests + lint/format for contributors) |
+| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy** (integration tests + tutorials that load PBMC3k) |
 | `all` | `anndata` + `enrichment` |
 
 ```bash
@@ -101,6 +97,8 @@ uv run ruff format scevonet tests           # apply formatting
 ```
 
 #### Tests
+
+Integration tests load **PBMC3k** via **scanpy** (included in the default **dev** dependency group / `[dev]` extra). First run downloads the dataset once into Scanpy’s cache.
 
 ```bash
 uv run pytest tests/ -q
@@ -161,7 +159,15 @@ edges = em.network
 # subgraph = em.generate_cell_type_network("type_a", "type_b")
 ```
 
-**Tutorial notebook:** [examples/HowToUse.ipynb](examples/HowToUse.ipynb)
+### Example notebooks
+
+| Notebook | Description |
+|----------|-------------|
+| [**01_quickstart_synthetic**](examples/01_quickstart_synthetic.ipynb) | Minimal **self-contained** pipeline (random matrix, no downloads). |
+| [**02_PBMC3k_full_workflow**](examples/02_PBMC3k_full_workflow.ipynb) | **End-to-end API** with PBMC3k-derived demo data (`scanpy` + `scevonet.pbmc_demo`), validation, plotting, optional enrichment. |
+| [**03_xenopus_embryo_legacy**](examples/03_xenopus_embryo_legacy.ipynb) | Original Xenopus embryo pickle workflow *(needs external `.pkl` files — see notebook)*. |
+
+Install notebook extras: **`pip install 'scevonet[dev]'`** or **`uv sync`** (includes **scanpy** for PBMC notebooks and tests).
 
 ---
 
