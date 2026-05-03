@@ -1,4 +1,4 @@
-"""Tests for Sample / EvoManager and utilities."""
+"""Tests for Sample / EvoManager and utilities (PBMC-derived fixtures where noted)."""
 
 from __future__ import annotations
 

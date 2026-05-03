@@ -1,4 +1,4 @@
-"""Directionality helpers: synthetic unit tests + PBMC integration."""
+"""Directionality helpers: synthetic unit tests + PBMC integration (no LightGBM for basics)."""
 
 from __future__ import annotations
 

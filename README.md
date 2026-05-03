@@ -1,5 +1,3 @@
-<h1 align="center">scEvoNet</h1>
-
 <p align="center">
   <!-- Logo: PyPI needs HTTPS absolute URLs; jsDelivr mirrors GitHub once <code>assets/logo.png</code> exists on <code>main</code>. Fallback: raw.githubusercontent.com -->
   <a href="https://github.com/Qotov/scEvoNet">
@@ -61,7 +59,7 @@ Optional extras:
 |--------|---------|
 | `enrichment` | Gene-set ORA via **gseapy** / Enrichr (`enrich_genes`, …) |
 | `anndata` | `sample_from_adata(...)` for Scanpy-style `AnnData` |
-| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy**, **ipykernel** (tests + notebooks) |
+| `dev` | **pytest**, **pytest-cov**, **Ruff**, **scanpy**, **ipykernel** (tests, notebooks; PBMC3k cached after first run) |
 | `all` | `anndata` + `enrichment` |
 
 ```bash
@@ -110,7 +108,7 @@ uv run ruff format scevonet tests           # apply formatting
 
 #### Tests
 
-Integration tests load **PBMC3k** via **scanpy** (included in the **dev** group). First run downloads the dataset once into Scanpy’s cache.
+Integration tests load **PBMC3k** via **scanpy** (included in the **dev** group). First run downloads the dataset once into Scanpy’s cache. From a clone use **`uv sync`** (default **dev** group includes **scanpy**).
 
 ```bash
 uv run pytest tests/ -q
