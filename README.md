@@ -1,6 +1,6 @@
 <p align="center">
-  <!-- PNG + absolute URL: renders on PyPI and tools that block local/SVG. Forks: swap owner/repo. -->
-  <img src="https://raw.githubusercontent.com/Qotov/scEvoNet/main/assets/logo.png" alt="scEvoNet" width="520">
+  <!-- Relative to repo root: works on GitHub for every branch/tag. For PyPI, use an absolute URL after logo.png is on the default branch. -->
+  <img src="assets/logo.png" alt="scEvoNet" width="520">
 </p>
 
 <p align="center">
