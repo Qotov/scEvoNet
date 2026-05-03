@@ -5,7 +5,7 @@
   <a href="https://github.com/Qotov/scEvoNet">
     <img
       src="https://cdn.jsdelivr.net/gh/Qotov/scEvoNet@main/assets/logo.png"
-      alt="scEvoNet logo"
+      alt="scEvoNet: network and evolution icon with ScEvoNet wordmark"
       width="520"
     >
   </a>
