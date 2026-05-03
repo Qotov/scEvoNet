@@ -6,8 +6,6 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 import pandas as pd
@@ -16,17 +14,9 @@ from scipy.stats import zscore
 from sklearn.model_selection import train_test_split
 
 from scevonet.utils import sigmoid, update_df
+from scevonet.viz import draw_net, finish_matplotlib_figure
 
 logger = logging.getLogger(__name__)
-
-
-def _show_or_close(fig=None) -> None:
-    """``plt.show()`` in interactive backends; close figure when running headless (e.g. Agg)."""
-    be = matplotlib.get_backend().lower()
-    if be in ("agg", "cairo", "pdf", "ps", "svg", "template"):
-        plt.close(fig if fig is not None else plt.gcf())
-    else:
-        plt.show()
 
 
 def _lgbm_regressor():
@@ -277,7 +267,7 @@ class EvoManager:
             figsize=(10, 10),
         )
         grid.cax.set_visible(visible_legend)
-        _show_or_close(grid.figure)
+        finish_matplotlib_figure(grid.figure)
 
     def get_closest_cell_types(self, cell_type: str, type_: str = "matrix") -> list:
         """Closest cell types by score column (``model``) or correlation (``matrix``)."""
@@ -351,49 +341,3 @@ class EvoManager:
         ]
         subgraph = nx.from_pandas_edgelist(subnet, "in", "out", edge_attr=["importance"])
         return subgraph if net else subnet.drop_duplicates()
-
-
-def draw_net(
-    graph,
-    gene=None,
-    layout: str = "2",
-    font_size: int = 8,
-) -> None:
-    """
-    Draw ``graph`` with NetworkX. If ``gene`` is an iterable of nodes, those are labeled;
-    otherwise label nodes with degree ≥ 1 or betweenness ≥ 0.08.
-
-    ``gene`` may be ``False`` for backward compatibility (treated as auto-label mode).
-    """
-    b = nx.betweenness_centrality(graph)
-    labels: dict = {}
-    use_highlight = gene not in (None, False)
-    highlight = set(gene) if use_highlight else None
-    for node in graph.nodes():
-        if highlight is not None:
-            if node in highlight:
-                labels[node] = node
-        else:
-            if graph.degree[node] >= 1 or b.get(node, 0) >= 0.08:
-                labels[node] = node
-    layouts = {
-        "1": nx.spring_layout(graph),
-        "2": nx.kamada_kawai_layout(graph),
-        "3": nx.shell_layout(graph),
-    }
-    pos = layouts.get(layout, layouts["2"])
-    degrees = dict(graph.degree)
-    nx.draw(
-        graph,
-        pos=pos,
-        with_labels=False,
-        nodelist=list(degrees.keys()),
-        node_size=1500,
-        alpha=0.7,
-        node_color="lightblue",
-        style="dashed",
-        width=0.5,
-    )
-    nx.draw_networkx_labels(graph, pos, labels, font_size=font_size, font_color="black")
-    plt.margins(x=0.4, y=0.4)
-    _show_or_close(plt.gcf())

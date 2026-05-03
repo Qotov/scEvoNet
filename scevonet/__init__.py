@@ -13,12 +13,15 @@ from scevonet.validation import (
     leave_batch_out_auc,
     permutation_importance_null,
 )
+from scevonet.viz import draw_network, finish_matplotlib_figure
 
 __all__ = [
     "EvoManager",
     "Sample",
     "SampleConfig",
     "draw_net",
+    "draw_network",
+    "finish_matplotlib_figure",
     "fit_ovr_model",
     "sample_from_adata",
     "cluster_mean_expression",
@@ -30,4 +33,4 @@ __all__ = [
     "leave_batch_out_auc",
     "__version__",
 ]
-__version__ = "2.1.0"
+__version__ = "2.1.1"
